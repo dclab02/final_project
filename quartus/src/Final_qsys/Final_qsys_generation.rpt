@@ -1,0 +1,61 @@
+Info: Starting: Create block symbol file (.bsf)
+Info: qsys-generate /home/team02/final_project/quartus/Final_qsys.qsys --block-symbol-file --output-directory=/home/team02/final_project/quartus/src/Final_qsys --family="Cyclone IV E" --part=EP4CE115F29C7
+Progress: Loading quartus/Final_qsys.qsys
+Progress: Reading input file
+Progress: Adding altpll_0 [altpll 18.1]
+Progress: Parameterizing module altpll_0
+Progress: Adding clk_0 [clock_source 18.1]
+Progress: Parameterizing module clk_0
+Progress: Adding uart_0 [altera_avalon_uart 18.1]
+Progress: Parameterizing module uart_0
+Progress: Adding uart_Wrapper_0 [uart_Wrapper 1.0]
+Progress: Parameterizing module uart_Wrapper_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+Warning: Final_qsys.altpll_0: altpll_0.areset_conduit must be exported, or connected to a matching conduit.
+Warning: Final_qsys.altpll_0: altpll_0.locked_conduit must be exported, or connected to a matching conduit.
+Warning: Final_qsys.uart_0: Interrupt sender uart_0.irq is not connected to an interrupt receiver
+Warning: Final_qsys.altpll_0: altpll_0.pll_slave must be connected to an Avalon-MM master
+Info: qsys-generate succeeded.
+Info: Finished: Create block symbol file (.bsf)
+Info: 
+Info: Starting: Create HDL design files for synthesis
+Info: qsys-generate /home/team02/final_project/quartus/Final_qsys.qsys --synthesis=VERILOG --output-directory=/home/team02/final_project/quartus/src/Final_qsys/synthesis --family="Cyclone IV E" --part=EP4CE115F29C7
+Progress: Loading quartus/Final_qsys.qsys
+Progress: Reading input file
+Progress: Adding altpll_0 [altpll 18.1]
+Progress: Parameterizing module altpll_0
+Progress: Adding clk_0 [clock_source 18.1]
+Progress: Parameterizing module clk_0
+Progress: Adding uart_0 [altera_avalon_uart 18.1]
+Progress: Parameterizing module uart_0
+Progress: Adding uart_Wrapper_0 [uart_Wrapper 1.0]
+Progress: Parameterizing module uart_Wrapper_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+Warning: Final_qsys.altpll_0: altpll_0.areset_conduit must be exported, or connected to a matching conduit.
+Warning: Final_qsys.altpll_0: altpll_0.locked_conduit must be exported, or connected to a matching conduit.
+Warning: Final_qsys.uart_0: Interrupt sender uart_0.irq is not connected to an interrupt receiver
+Warning: Final_qsys.altpll_0: altpll_0.pll_slave must be connected to an Avalon-MM master
+Info: Final_qsys: Generating Final_qsys "Final_qsys" for QUARTUS_SYNTH
+Info: Interconnect is inserted between master uart_Wrapper_0.avalon_master_0 and slave uart_0.s1 because the master has address signal 5 bit wide, but the slave is 3 bit wide.
+Info: Interconnect is inserted between master uart_Wrapper_0.avalon_master_0 and slave uart_0.s1 because the master has readdata signal 32 bit wide, but the slave is 16 bit wide.
+Info: Interconnect is inserted between master uart_Wrapper_0.avalon_master_0 and slave uart_0.s1 because the master has writedata signal 32 bit wide, but the slave is 16 bit wide.
+Info: Interconnect is inserted between master uart_Wrapper_0.avalon_master_0 and slave uart_0.s1 because the master has waitrequest signal 1 bit wide, but the slave is 0 bit wide.
+Info: altpll_0: "Final_qsys" instantiated altpll "altpll_0"
+Info: uart_0: Starting RTL generation for module 'Final_qsys_uart_0'
+Info: uart_0:   Generation command is [exec /home/team02/intelFPGA/18.1/quartus/linux64/perl/bin/perl -I /home/team02/intelFPGA/18.1/quartus/linux64/perl/lib -I /home/team02/intelFPGA/18.1/quartus/sopc_builder/bin/europa -I /home/team02/intelFPGA/18.1/quartus/sopc_builder/bin/perl_lib -I /home/team02/intelFPGA/18.1/quartus/sopc_builder/bin -I /home/team02/intelFPGA/18.1/quartus/../ip/altera/sopc_builder_ip/common -I /home/team02/intelFPGA/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_uart -- /home/team02/intelFPGA/18.1/quartus/../ip/altera/sopc_builder_ip/altera_avalon_uart/generate_rtl.pl --name=Final_qsys_uart_0 --dir=/tmp/alt8794_4478557476851474004.dir/0004_uart_0_gen/ --quartus_dir=/home/team02/intelFPGA/18.1/quartus --verilog --config=/tmp/alt8794_4478557476851474004.dir/0004_uart_0_gen//Final_qsys_uart_0_component_configuration.pl  --do_build_sim=0  ]
+Info: uart_0: Done RTL generation for module 'Final_qsys_uart_0'
+Info: uart_0: "Final_qsys" instantiated altera_avalon_uart "uart_0"
+Info: uart_Wrapper_0: "Final_qsys" instantiated uart_Wrapper "uart_Wrapper_0"
+Info: mm_interconnect_0: "Final_qsys" instantiated altera_mm_interconnect "mm_interconnect_0"
+Info: rst_controller: "Final_qsys" instantiated altera_reset_controller "rst_controller"
+Info: uart_Wrapper_0_avalon_master_0_translator: "mm_interconnect_0" instantiated altera_merlin_master_translator "uart_Wrapper_0_avalon_master_0_translator"
+Info: uart_0_s1_translator: "mm_interconnect_0" instantiated altera_merlin_slave_translator "uart_0_s1_translator"
+Info: Final_qsys: Done "Final_qsys" with 8 modules, 10 files
+Info: qsys-generate succeeded.
+Info: Finished: Create HDL design files for synthesis

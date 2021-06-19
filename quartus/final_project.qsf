@@ -38,7 +38,7 @@
 
 set_global_assignment -name FAMILY "Cyclone IV E"
 set_global_assignment -name DEVICE EP4CE115F29C7
-set_global_assignment -name TOP_LEVEL_ENTITY final_project
+set_global_assignment -name TOP_LEVEL_ENTITY DE2_115
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "23:57:53  JUNE 03, 2021"
 set_global_assignment -name LAST_QUARTUS_VERSION "18.1.0 Standard Edition"
@@ -52,3 +52,48 @@ set_global_assignment -name NOMINAL_CORE_SUPPLY_VOLTAGE 1.2V
 set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (Verilog)"
 set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT "VERILOG HDL" -section_id eda_simulation
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/ip_eth_rx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/ip_eth_tx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/ip.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/arp_cache.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/lib/axis/rtl/priority_encoder.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/lfsr.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/iddr.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/oddr.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/ssio_ddr_in.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/udp_checksum_gen.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/udp_ip_tx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/udp_ip_rx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/arp.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/lib/axis/rtl/arbiter.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/lib/axis/rtl/axis_async_fifo.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/lib/axis/rtl/axis_fifo.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/lib/axis/rtl/axis_async_fifo_adapter.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/axis_gmii_tx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/axis_gmii_rx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/rgmii_phy_if.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/udp.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/ip_arb_mux.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/ip_complete.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/udp_complete.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/eth_axis_tx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/eth_axis_rx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/eth_mac_1g.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/eth_mac_1g_rgmii.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/eth_mac_1g_rgmii_fifo.v"
+set_global_assignment -name SYSTEMVERILOG_FILE src/DE2_115/Debounce.sv
+set_global_assignment -name SDC_FILE src/DE2_115/DE2_115.sdc
+set_global_assignment -name SYSTEMVERILOG_FILE src/DE2_115/DE2_115.sv
+set_global_assignment -name VERILOG_FILE src/DE2_115/hex_display.v
+set_global_assignment -name SYSTEMVERILOG_FILE src/final_project_core.sv
+set_global_assignment -name VERILOG_FILE src/Final_qsys/synthesis/Final_qsys.v -library Final_qsys
+set_global_assignment -name QIP_FILE src/Final_qsys/synthesis/Final_qsys.qip
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/eth_arb_mux.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/arp_eth_rx.v"
+set_global_assignment -name VERILOG_FILE "../verilog-ethernet/rtl/arp_eth_tx.v"
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
