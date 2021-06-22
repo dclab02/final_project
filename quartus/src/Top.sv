@@ -6,15 +6,6 @@ module Top (
 	input i_key_2,  // Stop
 	// input [3:0] i_speed, // design how user can decide mode on your own
 	
-	// AudDSP and SRAM
-	output [19:0] o_SRAM_ADDR,
-	inout  [15:0] io_SRAM_DQ,
-	output        o_SRAM_WE_N,
-	output        o_SRAM_CE_N,
-	output        o_SRAM_OE_N,
-	output        o_SRAM_LB_N,
-	output        o_SRAM_UB_N,
-	
 	// I2C
 	input  i_clk_100k,
 	output o_I2C_SCLK,
@@ -32,14 +23,6 @@ module Top (
 	output [5:0] o_play_time,
 	output [5:0] o_state,
 	// output [5:0] o_state_dsp,
-	// functional select switch
-	input i_switch_0, // slow_0
-	input i_switch_1, // slow_1
-	input i_switch_2, // fast
-	input i_switch_3, // bit[0]
-	input i_switch_4, // bit[1]
-	input i_switch_5, // bit[2]
-	input i_switch_6, // repeat
 
 	// LCD (optional display)
 	input        i_clk_800k,
@@ -76,41 +59,36 @@ logic [20:0] end_addr_r, end_addr_w;
 /////////////////////////////////////
 
 // relate to Demodulate module
-logic start_demodulate, demodulateValid;
+logic start_demodulate;
 logic [7:0] IValue;
 logic [7:0] QValue;
 logic [8:0] demodulateValue;
 //////////////////////////////
 
-assign io_I2C_SDAT = (i2c_oen) ? i2c_sdat : 1'bz;
+// relate to Hardware DataPath
+logic datapath_rst_n;
+logic [7:0] DValue_RE, QValue_RE, DValue_DE, QValue_DE;
+logic [15:0] signalDE, signalFI_in, signalFI_out, signalPL_in;
+logic stall;
+logic ReceiverValid, DemodulatorValid, FilterValid, PlayerValid;
+assign stall = ~ReceiverValid & ~DemodulatorValid & ~FilterValid & ~PlayerValid & ~datapath_rst_n;
+//////////////////////////////
 
-assign o_SRAM_ADDR = (state_r == S_RECD) ? addr_record : play_addr[19:0];
-assign io_SRAM_DQ  = (state_r == S_RECD) ? data_record : 16'dz; // sram_dq as output
 assign play_data   = (state_r != S_RECD) ? io_SRAM_DQ : 16'd0; // sram_dq as input
 
 assign o_ledg = {i_AUD_DACLRCK, 5'b0, play_start,  play_pause, play_stop}; // [DEBUG] This is for testing
 
-assign o_SRAM_WE_N = (state_r == S_RECD) ? 1'b0 : 1'b1;
-assign o_SRAM_CE_N = 1'b0;
-assign o_SRAM_OE_N = 1'b0;
-assign o_SRAM_LB_N = 1'b0;
-assign o_SRAM_UB_N = 1'b0;
-
 // relate to Player Controller module
 assign play_speed 	= 21'd44;
 assign playing     = (state_r == S_PLAY) ? 1'b1 : 1'b0;
-assign recd_pause  = (state_r == S_RECD_PAUSE) ? 1'b1 : 1'b0;
-assign recd_stop   = (state_r == S_IDLE) ? 1'b1 : 1'b0;
-assign play_pause  = (state_r == S_PLAY_PAUSE) ? 1'b1 : 1'b0;
 assign play_stop   = (state_r == S_IDLE) ? 1'b1 : 1'b0;
-assign play_start  = (state_r == S_PLAY) ? 1'b1 : 1'b0;
 
 // hex display
 // timer
-logic [5:0] recd_sec_r, recd_sec_w;
-logic [23:0] recd_counter_r, recd_counter_w;
-assign o_record_time = recd_sec_r;
-assign o_play_time =  { 1'b0, play_addr[19:15] }; // to adjust with quick and slow play, so set by play_addr
+// logic [5:0] recd_sec_r, recd_sec_w;
+// logic [23:0] recd_counter_r, recd_counter_w;
+// assign o_record_time = recd_sec_r;
+// assign o_play_time =  { 1'b0, play_addr[19:15] };
 
 // state
 assign o_state = state_r;
@@ -121,7 +99,6 @@ assign o_state = state_r;
 // === I2cInitializer ===
 // sequentially sent out settings to initialize WM8731 with I2C protocal
 logic [1:0] i2c_state;
-
 I2CInitializer init0(
 	.i_rst_n(i_rst_n),
 	.i_clk(i_clk_100k),
@@ -133,60 +110,73 @@ I2CInitializer init0(
 	.o_state(i2c_state)
 );
 
-// === AudPlayerController ===
-// responsible for DSP operations including fast play and slow play at different speed
-// in other words, determine which data addr to be fetch for player 
-AudPlayerController controller(
-	.i_rst_n(i_rst_n),
-	.i_clk(i_AUD_BCLK),
-	.i_start(play_start),
-	.i_speed(play_speed),
-	.i_daclrck(i_AUD_DACLRCK),
-	.i_sram_data(play_data),
-	.i_end_addr(end_addr_w),
-	.o_dac_data(dac_data),
-	.o_sram_addr(play_addr),
-);
+// === Receiver ===
+// TODO
+// need output I, Q (8 bit)
+// need output datapath rst signal
+// need output valid bit
 
-// [DEBUG]
-// logic [15:0] dac_data_tmp;
-// assign dac_data_tmp = {play_addr[16],15'b0};
+Receiver receiver();
+
 
 // === Demodulator ===
 // input 8bit unsigned IValue and QValue, output 9 bit unsigned Value
+// need output valid bit
+// need output signal (16 bits)
 Demodulator demodulator(
 	.clk(i_clk),
 	.start(start_demodulate),
 	.I_value(IValue),
 	.Q_value(QValue),
 	.magnitude_out(demodulateValue),
-	.valid(demodulateValid)
+	.valid(DemodulatorValid)
 );
 
+
+// === Filter ===
+// input signal (16 bits)
+// need output valid bit
+// need output signal (16 bits)
+Filter filter();
+
+
 // === AudPlayer ===
-// receive data address from DSP and fetch data to sent to WM8731 with I2S protocal
+// receive signal data and sent to WM8731 with I2S protocal
 AudPlayer player0(
 	.i_rst_n(i_rst_n),
 	.i_bclk(i_AUD_BCLK),
 	.i_daclrck(i_AUD_DACLRCK),
 	.i_en(playing), // enable AudPlayer only when playing audio, work with AudDSP
-	.i_dac_data(dac_data), //dac_data
+	.i_dac_data(signalPL_in), //dac_data
 	.o_aud_dacdat(o_AUD_DACDAT)
 );
 
-// === AudRecorder ===
-// receive data from WM8731 with I2S protocal and save to SRAM
-// AudRecorder recorder0(
-// 	.i_rst_n(i_rst_n), 
-// 	.i_clk(i_AUD_BCLK),
-// 	.i_lrc(i_AUD_ADCLRCK),
-// 	.i_start(recd_start),
-// 	.i_pause(recd_pause),
-// 	.i_stop(recd_stop),
-// 	.i_data(i_AUD_ADCDAT),
-// 	.o_address(addr_record),
-// 	.o_data(data_record)
-// );
+// === Pipeline Registers ===
+PipelineRegister_RE_DE RE_DE_reg(
+    .i_rst_n(i_AUD_ADCLRCK),
+	.i_clk(i_clk),
+	.i_stall(stall),
+	.i_D_value(DValue_RE),
+    .i_Q_value,(QValue_RE) 
+    .o_D_value(DValue_DE),
+    .o_Q_value(DValue_DE)
+);
+
+PipelineRegister_DE_FI　DE_FI_reg(
+    .i_rst_n(i_AUD_ADCLRCK),
+	.i_clk(i_clk),
+	.i_stall(stall),
+    .i_signal(signalDE),
+    .o_signal(signalFI_in)
+);
+
+PipelineRegister_DE_FI　DE_FI_reg(
+    .i_rst_n(i_AUD_ADCLRCK),
+	.i_clk(i_clk),
+	.i_stall(stall),
+    .i_signal(signalFI_out),
+    .o_signal(signalPL_in)
+);
 
 
 // FSM
@@ -206,8 +196,14 @@ always_comb begin
 			end
 		end
 		S_IDLE: begin		
-			recd_sec_w = 6'b0;
-			// TODO
+			// need to discuss how to trigger other state...
+			if (i_key_1) begin
+				state_w = S_CONNECT;
+			end
+			else if (i_key_2) begin
+				state_w = S_PLAY;
+			end
+			
 		end
 		S_CONNECT: begin	
 			// TODO
