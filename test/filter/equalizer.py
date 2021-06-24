@@ -7,6 +7,7 @@ import argparse
 import matplotlib.pyplot as plt
 from scipy import signal
 from scipy.signal import freqs, freqz
+from scipy.fft import fft, fftfreq, rfft, rfftfreq, ifft, irfft
 
 
 class Filter():
@@ -29,6 +30,7 @@ class Filter():
             "BPF2": self.band_pass2,
             "notch": self.notch,
             "APF": self.all_pass,
+            # only below will be used
             "peakingEQ": self.peakingEQ,
             "lowShelf": self.low_shelf,
             "highShelf": self.high_shelf
@@ -145,13 +147,25 @@ def apply_filt(y, x, b, a, data):
 
 
 def fix_size_list(l, size, data=None):
+    # bytestring
     if data != None:
-        l.append(data)
+        l += data
     if len(l) > size:
-        l = l[:-(size-1)]
-    if len(l) == size:
-        print(size)
-        # make_fft
+        l = l[-size:]
+    # if len(l) == size:
+        # print(size)
+        # d = np.frombuffer(l, dtype=np.int16)
+        # duration = d.shape[0] / size
+        # N = int(size * duration)
+
+        # yf = rfft(d)
+        # xf = rfftfreq(N, 1 / size)
+
+        # plt.figure()
+        # plt.plot(xf, np.abs(yf))
+        # plt.xscale('log')
+        # plt.savefig("./output")
+        # plt.close()
     return l
 
 
@@ -179,12 +193,17 @@ if __name__ == "__main__":
     b, a = filt.filter(args.t[0], args.f[0], args.a[0], args.q[0])
     print(b, a)
 
-    # # # pylab plot and show
+    # # pylab plot and show
     # plt.figure()
-    # w, h = freqz(b, a, 20000, fs=framerate)
-    # plt.plot(w, 20 * np.log10(abs(h)), 'r', alpha=0.5)
+    # w0 = 2 * args.f[0] * 2 * np.pi
+    # plt.axvline(x=w0)
+    # sw, sh = freqs([1 / (w0**2), 10 ** (args.a[0] / 40) / args.q[0] / w0, 1],
+    #                [1 / (w0**2), 1/(10 ** (args.a[0] / 40) * args.q[0]) / w0, 1])
+    # plt.plot(sw, 20 * np.log10(abs(sh)), 'r', alpha=0.5)
+    # w, h = freqz(b, a, 10000, fs=framerate)
+    # plt.plot(w, 20 * np.log10(abs(h)), 'g', alpha=0.5)
     # plt.xscale('log')
-    # plt.xlabel('Frequency [radians / second]')
+    # plt.xlabel('Frequency [rad/s]')
     # plt.ylabel('Amplitude [dB]')
     # plt.savefig("./output")
 
@@ -199,12 +218,12 @@ if __name__ == "__main__":
     y = [[0, 0], [0, 0], [0, 0]]
     x = [[0, 0], [0, 0], [0, 0]]
 
-    l = []
+    l = b''
 
     # play stream (3)
     while len(data) > 0:
         y, x, data = apply_filt(y, x, b, a, data)
-        l = fix_size_list(l, framerate, data)
+        l = fix_size_list(l, 44100, data)
         stream.write(data)
         # print(data)
         data = wf.readframes(CHUNK)
