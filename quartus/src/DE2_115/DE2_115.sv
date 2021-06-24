@@ -137,21 +137,14 @@ module DE2_115 (
 );
 
 logic key0down, key1down, key2down, key3down;
-// logic CLK_12M, CLK_100K, CLK_800K;
+logic CLK_12M, CLK_100K, CLK_800K;
 
-// assign AUD_XCK = CLK_12M;
-
-// Altpll pll0( // generate with qsys, please follow lab2 tutorials
-// 	.clk_clk(CLOCK_50),
-// 	.reset_reset_n(key3down),
-// 	.altpll_12m_clk(CLK_12M),
-// 	.altpll_100k_clk(CLK_100K),
-// 	.altpll_800k_clk(CLK_800K)
-// );
-
+// Internal 125 MHz clock
 logic clk_int;
 logic rst_int;
 
+logic pll_rst;
+assign pll_rst = ~KEY[3];
 logic pll_locked;
 
 logic clk90_int;
@@ -216,7 +209,7 @@ altpll #(
     .width_clock(5)
 )
 altpll_component (
-    .areset(~KEY[3]),
+    .areset(pll_rst),
     .inclk({1'b0, CLOCK_50}),
     .clk({clk90_int, clk_int}),
     .locked(pll_locked),
@@ -255,14 +248,13 @@ altpll_component (
     .vcounderrange()
 );
 
-// // qsys for uart communication
-// Final_qsys my_qsys(
-// 	.clk_clk(CLOCK_50),
-// 	.rst_reset_n(KEY[0]),
-// 	.uart_0_external_connection_rxd(UART_RXD),
-// 	.uart_0_external_connection_txd(UART_TXD)
-// );
-
+my_pll pll2(
+	.areset(KEY[3]),
+	.inclk0(CLOCK_50),
+	.c0(CLK_12M),
+	.c1(CLK_800K),
+	.locked()
+);
 
 // you can decide key down settings on your own, below is just an example
 Debounce deb0(
@@ -288,7 +280,8 @@ Debounce deb2(
 
 final_project_core top0(
 	.i_rst_n(KEY[3]),
-	.i_clk(CLK_12M),
+	.i_clk(CLOCK_50),
+	.i_clk12M(CLK_12M),
 	.i_key_0(key0down),
 	.i_key_1(key1down),
 	.i_key_2(key2down),
@@ -304,9 +297,9 @@ final_project_core top0(
 	.o_SRAM_UB_N(SRAM_UB_N),
 	
 	// I2C
-	// .i_clk_100k(CLK_100K),
-	// .o_I2C_SCLK(I2C_SCLK),
-	// .io_I2C_SDAT(I2C_SDAT),
+	.i_clk_100k(CLK_100K),
+	.o_I2C_SCLK(I2C_SCLK),
+	.io_I2C_SDAT(I2C_SDAT),
 	
 	// AudPlayer
 	// .i_AUD_ADCDAT(AUD_ADCDAT),
@@ -331,10 +324,6 @@ final_project_core top0(
 	// LED
 	// .o_ledg(LEDG), // [8:0]
 	// .o_ledr(LEDR) // [17:0]
-    /*
-     * Clock: 125MHz
-     * Synchronous reset
-     */
 
     /*
      * GPIO
@@ -343,8 +332,8 @@ final_project_core top0(
     // .sw(sw_int),
     .led_g(LEDG),
     // .ledr(LEDR),
-    .hex0(HEX0),
-    .hex1(HEX1),
+    // .hex0(HEX0),
+    // .hex1(HEX1),
     // .hex2(HEX2),
     // .hex3(HEX3),
     // .hex4(HEX4),
@@ -352,6 +341,41 @@ final_project_core top0(
     // .hex6(HEX6),
     // .hex7(HEX7),
     // .gpio(GPIO),
+
+);
+
+sync_reset #(
+    .N(4)
+)
+sync_reset_inst (
+    .clk(clk_int),
+    .rst(~pll_locked),
+    .out(rst_int)
+);
+
+udp_wrapper udp0(
+
+	.i_clk(clk_int),
+    .i_clk90(clk90_int),
+	.i_rst(rst_int),
+    // .i_rst_n(KEY[3]),
+
+	.udp_tx_ready(),
+    .udp_tx_length(),
+    .udp_rx_avail(),
+    .udp_rx_last(),
+    .udp_data_rx(),
+    .udp_data_tx(),
+
+	.led_r(LEDR),
+	.hex0(HEX0),
+    .hex1(HEX1),
+    .hex2(HEX2),
+    .hex3(HEX3),
+    .hex4(HEX4),
+    .hex5(HEX5),
+    .hex6(HEX6),
+    .hex7(HEX7),
 
     /*
      * Ethernet: 1000BASE-T RGMII
@@ -365,14 +389,10 @@ final_project_core top0(
     .phy0_reset_n(ENET0_RST_N),
     .phy0_int_n(ENET0_INT_N)
 
-    // .phy1_rx_clk(ENET1_RX_CLK),
-    // .phy1_rxd(ENET1_RX_DATA),
-    // .phy1_rx_ctl(ENET1_RX_DV),
-    // .phy1_tx_clk(ENET1_GTX_CLK),
-    // .phy1_txd(ENET1_TX_DATA),
-    // .phy1_tx_ctl(ENET1_TX_EN),
-    // .phy1_reset_n(ENET1_RST_N),
-    // .phy1_int_n(ENET1_INT_N)
 );
+
+
+
+
 
 endmodule
