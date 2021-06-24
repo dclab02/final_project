@@ -12,3 +12,7 @@ unsaved/
 *.fsdb
 *.log
 *.bak
+
+*.wav
+*.png
+*.mp3
