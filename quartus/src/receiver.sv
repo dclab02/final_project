@@ -1,0 +1,5 @@
+module receiver (
+    input 
+);
+    
+endmodule

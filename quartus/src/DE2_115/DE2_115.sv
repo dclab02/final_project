@@ -137,17 +137,19 @@ module DE2_115 (
 );
 
 logic key0down, key1down, key2down, key3down;
-logic CLK_12M, CLK_100K, CLK_800K;
+logic CLK_12M, CLK_800K;
 
 // Internal 125 MHz clock
-logic clk_int;
+logic clk_int, clk90_int;
 logic rst_int;
 
 logic pll_rst;
 assign pll_rst = ~KEY[3];
 logic pll_locked;
 
-logic clk90_int;
+logic udp_rx_valid, udp_rx_ready, udp_rx_last;
+logic udp_tx_ready;
+logic [7:0] udp_rx_data, udp_tx_data;
 
 altpll #(
     .bandwidth_type("AUTO"),
@@ -252,7 +254,7 @@ my_pll pll2(
 	.areset(KEY[3]),
 	.inclk0(CLOCK_50),
 	.c0(CLK_12M),
-	.c1(CLK_800K),
+	.c1(CLK_100k),
 	.locked()
 );
 
@@ -282,11 +284,20 @@ final_project_core top0(
 	.i_rst_n(KEY[3]),
 	.i_clk(CLOCK_50),
 	.i_clk12M(CLK_12M),
+	.i_clk100k(CLK_100K),
+
 	.i_key_0(key0down),
 	.i_key_1(key1down),
 	.i_key_2(key2down),
 	// .i_speed(SW[3:0]), // design how user can decide mode on your own
-	
+
+	// UDP data
+	.udp_rx_valid(udp_rx_valid),
+	.udp_rx_ready(udp_rx_ready),
+	.udp_rx_last(udp_rx_last),
+	.udp_rx_data(udp_rx_data),
+	.udp_tx_data(udp_tx_data),
+
 	// SRAM
 	.o_SRAM_ADDR(SRAM_ADDR), // [19:0]
 	.io_SRAM_DQ(SRAM_DQ),    // [15:0]
@@ -302,11 +313,11 @@ final_project_core top0(
 	.io_I2C_SDAT(I2C_SDAT),
 	
 	// AudPlayer
-	// .i_AUD_ADCDAT(AUD_ADCDAT),
-	// .i_AUD_ADCLRCK(AUD_ADCLRCK),
-	// .i_AUD_BCLK(AUD_BCLK),
-	// .i_AUD_DACLRCK(AUD_DACLRCK),
-	// .o_AUD_DACDAT(AUD_DACDAT)
+	.i_AUD_ADCDAT(AUD_ADCDAT),
+	.i_AUD_ADCLRCK(AUD_ADCLRCK),
+	.i_AUD_BCLK(AUD_BCLK),
+	.i_AUD_DACLRCK(AUD_DACLRCK),
+	.o_AUD_DACDAT(AUD_DACDAT),
 
 	// SEVENDECODER (optional display)
 	// .o_record_time(recd_time),
@@ -331,6 +342,9 @@ final_project_core top0(
     // .btn(btn_int),
     // .sw(sw_int),
     .led_g(LEDG),
+	.led_r(LEDR)
+
+	
     // .ledr(LEDR),
     // .hex0(HEX0),
     // .hex1(HEX1),
@@ -360,14 +374,15 @@ udp_wrapper udp0(
 	.i_rst(rst_int),
     // .i_rst_n(KEY[3]),
 
-	.udp_tx_ready(),
+    .udp_rx_valid(udp_rx_valid),
+	.udp_rx_ready(udp_rx_ready),
+    .udp_rx_last(udp_rx_last),
+	.udp_rx_data(udp_rx_data),
+	.udp_tx_ready(udp_tx_ready),
     .udp_tx_length(),
-    .udp_rx_avail(),
-    .udp_rx_last(),
-    .udp_data_rx(),
-    .udp_data_tx(),
+	.udp_tx_data(udp_tx_data),
 
-	.led_r(LEDR),
+	.led_r(),
 	.hex0(HEX0),
     .hex1(HEX1),
     .hex2(HEX2),

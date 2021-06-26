@@ -3,13 +3,17 @@ module udp_wrapper (
     input i_clk90,
     input i_rst,
     // input i_rst_n,
-
+    output        udp_rx_valid,
+    input         udp_rx_ready,
+    output        udp_rx_last,
+    output [7:0]  udp_rx_data,
+    
     input         udp_tx_ready,
     input  [15:0] udp_tx_length,
-    output        udp_rx_avail,
-    output        udp_rx_last,
-    output [7:0]  udp_data_rx,
-    output [7:0]  udp_data_tx,
+
+
+
+    output [7:0]  udp_tx_data,
     
     output [17:0] led_r,
     output [6:0]  hex0,
@@ -199,6 +203,14 @@ assign tx_ip_payload_axis_tvalid = 0;
 assign tx_ip_payload_axis_tlast = 0;
 assign tx_ip_payload_axis_tuser = 0;
 
+// assign udp_tx_ready
+// assign udp_tx_length
+// assign udp_rx_valid = tx_fifo_udp_payload_axis_tvalid;
+// assign udp_rx_ready = 
+// assign udp_rx_last = tx_fifo_udp_payload_axis_tlast;
+// assign udp_data_rx = tx_fifo_udp_payload_axis_tdata;
+// assign udp_tx_data
+
 logic match_cond;
 assign match_cond = rx_udp_dest_port == 1234;
 logic no_match;
@@ -237,11 +249,17 @@ assign tx_udp_dest_port = rx_udp_source_port;
 assign tx_udp_length = rx_udp_length;
 assign tx_udp_checksum = 0;
 
-assign tx_udp_payload_axis_tdata = tx_fifo_udp_payload_axis_tdata;
-assign tx_udp_payload_axis_tvalid = tx_fifo_udp_payload_axis_tvalid;
-assign tx_fifo_udp_payload_axis_tready = tx_udp_payload_axis_tready;
-assign tx_udp_payload_axis_tlast = tx_fifo_udp_payload_axis_tlast;
+// output wire
+// assign tx_fifo_udp_payload_axis_tready = tx_udp_payload_axis_tready;
+// assign tx_udp_payload_axis_tdata = tx_fifo_udp_payload_axis_tdata;
+// assign tx_udp_payload_axis_tvalid = tx_fifo_udp_payload_axis_tvalid;
+// assign tx_udp_payload_axis_tlast = tx_fifo_udp_payload_axis_tlast;
 assign tx_udp_payload_axis_tuser = tx_fifo_udp_payload_axis_tuser;
+// loop back
+assign tx_udp_payload_axis_tdata = udp_rx_data;
+assign tx_udp_payload_axis_tvalid = udp_rx_valid;
+assign tx_udp_payload_axis_tlast = udp_rx_last;
+
 
 assign rx_fifo_udp_payload_axis_tdata = rx_udp_payload_axis_tdata;
 assign rx_fifo_udp_payload_axis_tvalid = rx_udp_payload_axis_tvalid && match_cond_reg;
@@ -680,11 +698,11 @@ udp_payload_fifo (
     .s_axis_tuser(rx_fifo_udp_payload_axis_tuser),
 
     // AXI output
-    .m_axis_tdata(tx_fifo_udp_payload_axis_tdata),
+    .m_axis_tdata(udp_rx_data),
     .m_axis_tkeep(),
-    .m_axis_tvalid(tx_fifo_udp_payload_axis_tvalid),
-    .m_axis_tready(tx_fifo_udp_payload_axis_tready),
-    .m_axis_tlast(tx_fifo_udp_payload_axis_tlast),
+    .m_axis_tvalid(udp_rx_valid),
+    .m_axis_tready(udp_rx_ready),
+    .m_axis_tlast(udp_rx_last),
     .m_axis_tid(),
     .m_axis_tdest(),
     .m_axis_tuser(tx_fifo_udp_payload_axis_tuser),
