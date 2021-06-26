@@ -175,13 +175,12 @@ filter filt5 (
 // equalizer filter run
 always_comb begin
     state_w = state_r;
-    filt_start  = 5'b00000;
+    filt_start = 5'd0;
     valid = 1'b0;
     case (state_r)
         // IDLE
         3'd0: begin
             filt_start = 5'b00000;
-            state_w = 3'd0;
             valid = 1'b1;
             if (i_start) begin
                 valid = 1'b0;

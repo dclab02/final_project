@@ -161,6 +161,14 @@ altpll #(
     .clk1_duty_cycle(50),
     .clk1_multiply_by(5),
     .clk1_phase_shift("2000"),
+	.clk2_divide_by(25),
+	.clk2_duty_cycle(50),
+	.clk2_multiply_by(6),
+	.clk2_phase_shift("0"),
+	.clk3_divide_by(500),
+	.clk3_duty_cycle(50),
+	.clk3_multiply_by(1),
+	.clk3_phase_shift("0"),
     .compensate_clock("CLK0"),
     .inclk0_input_frequency(20000),
     .intended_device_family("Cyclone IV E"),
@@ -193,8 +201,8 @@ altpll #(
     .port_scanwrite("PORT_UNUSED"),
     .port_clk0("PORT_USED"),
     .port_clk1("PORT_USED"),
-    .port_clk2("PORT_UNUSED"),
-    .port_clk3("PORT_UNUSED"),
+    .port_clk2("PORT_USED"),
+    .port_clk3("PORT_USED"),
     .port_clk4("PORT_UNUSED"),
     .port_clk5("PORT_UNUSED"),
     .port_clkena0("PORT_UNUSED"),
@@ -213,7 +221,7 @@ altpll #(
 altpll_component (
     .areset(pll_rst),
     .inclk({1'b0, CLOCK_50}),
-    .clk({clk90_int, clk_int}),
+    .clk({CLK_100K, CLK_12M, clk90_int, clk_int}),
     .locked(pll_locked),
     .activeclock(),
     .clkbad(),
@@ -250,13 +258,14 @@ altpll_component (
     .vcounderrange()
 );
 
-my_pll pll2(
-	.areset(KEY[3]),
-	.inclk0(CLOCK_50),
-	.c0(CLK_12M),
-	.c1(CLK_100k),
-	.locked()
-);
+// my_pll pll2(
+// 	.areset(KEY[3]),
+// 	.inclk0(CLOCK_50),
+// 	.c0(CLK_12M),
+// 	.c1(CLK_100k),
+// 	.locked()
+// );
+
 
 // you can decide key down settings on your own, below is just an example
 Debounce deb0(

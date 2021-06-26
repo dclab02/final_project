@@ -57,7 +57,6 @@ logic [17:0] led_r_r, led_r_w;
 
 logic [15:0] data_record;
 logic [15:0] audio_data;
-logic playing;
 
 logic filter_set_reg;
 
@@ -67,10 +66,10 @@ localparam S_RX_START = 3'd2;
 localparam S_SET  = 3'd3;
 localparam S_RECV = 3'd4;
 localparam S_READ = 3'd5;
-localparam S_TMP  = 3'd6;
 localparam S_PLAY = 3'd7;
 
 logic i2c_init, i2c_init_stat;
+logic [1:0] i2c_o_state;
 
 assign o_SRAM_CE_N = 1'b0;
 assign o_SRAM_ADDR = (state_r == S_RECV) ? addr_record : addr_read[19:0];
@@ -98,7 +97,6 @@ logic [8:0] demodulateValue;
 //////////////////////////////
 
 // relate to Hardware DataPath
-logic datapath_rst_n;
 logic [7:0] IValue_RE, QValue_RE, IValue_DE, QValue_DE;
 logic [15:0] signalDE, signalFI_in, signalFI_out, signalAS_in, signalPL_in;
 logic stall, stall_pre;
@@ -111,7 +109,7 @@ assign FIFOWrite = stall_falling_edge? 1'b1 : 1'b0;
 assign FIFORead = 1'b1;
 
 // datapath stall
-assign stall = ~ReceiverValid | ~DemodulatorValid | ~FilterValid | ~PlayerValid | ~datapath_rst_n;
+assign stall = ~ReceiverValid | ~DemodulatorValid | ~FilterValid | ~PlayerValid;
 assign start = ~stall & receiverReady;
 assign stall_falling_edge = stall_pre & ~stall;
 
@@ -125,16 +123,16 @@ assign udp_rx_ready = ready_r;
 
 I2CInitializer init0(
 	.i_rst_n(i_rst_n),
-	.i_clk(i_clk_100k),
+	.i_clk(i_clk),
 	.i_start(i2c_init),
 	.o_finished(i2c_init_stat),
 	.o_sclk(o_I2C_SCLK),
 	.o_sdat(i2c_sdat),
-	.o_state(i2c_state)
+	.o_state(i2c_o_state)
 );
 
 // === Demodulator ===
-// input 8bit unsigned IValue and QValue, output 9 bit unsigned Value
+// input 8bit unsigned IValue and QValue, output 16 bit unsigned Value
 // need output valid bit
 // need output signal (16 bits)
 assign usigned_QValue = QValue_DE[7] ? ~QValue_DE + 8'd1 : QValue_DE;
@@ -152,20 +150,22 @@ AsyncFIFO audio_async_fifo(
     .wdata(signalAS_in),
     .winc(FIFOwrite),
     .wclk(i_clk),
-    .wrst_n(datapath_rst_n),
+    .wrst_n(i_rst_n),
     .rinc(FIFOread),
     .rclk(i_AUD_ADCLRCK),
-    .rrst_n(datapath_rst_n),
+    .rrst_n(i_rst_n),
     .rdata(signalPL_in),
     .wfull(FIFOFull),
     .rempty(FIFOEmpty)
 );
 
+// === Player ===
+
 AudioPlayer player0(
 	.i_rst_n(i_rst_n),
 	.i_bclk(i_clk12M),
 	.i_daclrck(i_AUD_DACLRCK),
-	.i_en(playing),
+	.i_en(start), // 
 	.i_dac_data(signalPL_in), // dac_data
 	.o_aud_dacdat(o_AUD_DACDAT)
 );
@@ -173,7 +173,7 @@ AudioPlayer player0(
 // === Pipeline Registers ===
 // receiver to demodulator
 PipelineRegister_RE_DE RE_DE_reg(
-    .i_rst_n(datapath_rst_n),
+    .i_rst_n(i_rst_n),
 	.i_clk(i_clk),
 	.i_stall(stall),
 	.i_D_value(IValue_RE),
@@ -184,7 +184,7 @@ PipelineRegister_RE_DE RE_DE_reg(
 
 // demodulator to filter
 PipelineRegister_DE_FI DE_FI_reg(
-    .i_rst_n(datapath_rst_n),
+    .i_rst_n(i_rst_n),
 	.i_clk(i_clk),
 	.i_stall(stall),
     .i_signal(signalDE),
@@ -193,24 +193,29 @@ PipelineRegister_DE_FI DE_FI_reg(
 
 // filter to AsyncFIFO
 PipelineRegister_FI_AS FI_PL_reg(
-    .i_rst_n(datapath_rst_n),
+    .i_rst_n(i_rst_n),
 	.i_clk(i_clk),
 	.i_stall(stall),
     .i_signal(signalFI_out),
     .o_signal(signalAS_in)
 );
 
+
 assign led_g_r[2:0] = state_r;
 
-assign led_g_r[4] = udp_rx_valid;
-assign led_g_r[5] = udp_rx_ready;
-assign led_g_r[6] = udp_rx_last;
+assign led_g_r[4:3] = i2c_o_state;
+assign led_g_r[5] = i2c_init;
+assign led_g_r[6] = i2c_init_stat;
+
+// assign led_g_r[5] = udp_rx_valid;
+// assign led_g_r[6] = udp_rx_ready;
+// assign led_g_r[7] = udp_rx_last;
 
 always_comb begin
     state_w = state_r;
     led_r_w = led_r_r;
     i2c_init = 1'b0;
-    i2c_init_stat = 1'b0;
+    // i2c_init_stat = 1'b0;
     iq_alter = 1'b0;
     sram_addr_write_w = sram_addr_write_r;
     sram_addr_read_w = sram_addr_read_r;
@@ -218,7 +223,6 @@ always_comb begin
     sram_reverse = 1'b0;
     sram_write_data = 16'b0;
     sram_read_data = 16'b0;
-    datapath_rst_n = 1'b0;
     IValue_RE = 8'b0;
     QValue_RE = 8'b0;
 
@@ -320,6 +324,7 @@ always_comb begin
                 QValue_RE = sram_read_data[7:0];
                 sram_addr_read_w = sram_addr_read_r + 1'b1;
             end
+            state_w = S_IDLE;
         end
         default: begin
             state_w = state_r;
@@ -333,8 +338,7 @@ end
 
 always_ff @( posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
-        state_r <= S_IDLE;
-        // led_g_r <= 8'b0;
+        state_r <= S_INIT;
         led_r_r <= 8'b0;
         ready_r <= 0;
 
@@ -347,7 +351,6 @@ always_ff @( posedge i_clk or negedge i_rst_n) begin
         led_r_r <= led_r_w;
         ready_r <= ready_w;
 
-        
         // FIFOwrite <=1'b0;
         stall_pre <= stall;
         
