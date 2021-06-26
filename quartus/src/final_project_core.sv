@@ -8,11 +8,15 @@ module final_project_core (
 	input i_key_1,
 	input i_key_2,
 
-    input udp_rx_valid,
-    output udp_rx_ready,
-    input udp_rx_last,
-    input udp_rx_data,
-    input udp_tx_data,
+    output      udp_rx_ready,
+    input       udp_rx_valid,
+    input       udp_rx_last,
+    input [7:0] udp_rx_data,
+
+    input      udp_tx_ready,
+    output       udp_tx_valid,
+    output       udp_tx_last,
+    output [7:0] udp_tx_data,
 
     // SRAM
 	output [19:0] o_SRAM_ADDR,
@@ -57,12 +61,12 @@ logic playing;
 
 logic filter_set_reg;
 
-localparam S_IDLE = 3'd0;
-localparam S_INIT = 3'd1;
+localparam S_INIT = 3'd0;
+localparam S_IDLE = 3'd1;
 localparam S_RX_START = 3'd2;
-localparam S_RECV = 3'd3;
-localparam S_READ = 3'd4;
-localparam S_SET  = 3'd5;
+localparam S_SET  = 3'd3;
+localparam S_RECV = 3'd4;
+localparam S_READ = 3'd5;
 localparam S_TMP  = 3'd6;
 localparam S_PLAY = 3'd7;
 
@@ -112,6 +116,11 @@ assign start = ~stall & receiverReady;
 assign stall_falling_edge = stall_pre & ~stall;
 
 ///////////////////////////////
+
+// udp output
+logic ready_r, ready_w;
+logic [7:0] data_r, data_w;
+assign udp_rx_ready = ready_r;
 
 
 I2CInitializer init0(
@@ -191,9 +200,14 @@ PipelineRegister_FI_AS FI_PL_reg(
     .o_signal(signalAS_in)
 );
 
+assign led_g_r[2:0] = state_r;
+
+assign led_g_r[4] = udp_rx_valid;
+assign led_g_r[5] = udp_rx_ready;
+assign led_g_r[6] = udp_rx_last;
+
 always_comb begin
     state_w = state_r;
-    led_g_w = led_g_r;
     led_r_w = led_r_r;
     i2c_init = 1'b0;
     i2c_init_stat = 1'b0;
@@ -207,7 +221,8 @@ always_comb begin
     datapath_rst_n = 1'b0;
     IValue_RE = 8'b0;
     QValue_RE = 8'b0;
-    udp_rx_ready = 1'b0;
+
+    ready_w = ready_r;
 
     case (state_r)
         S_INIT: begin
@@ -221,10 +236,10 @@ always_comb begin
             end
         end
         S_IDLE: begin
-            led_g_w[0] = 1'b1;
             // 一旦收到UDP就放
             if (udp_rx_valid) begin
                 state_w = S_RX_START;
+                ready_w = 1'b1;
             end
             else if ((sram_reverse && sram_addr_read_r < sram_addr_write_w) || (!sram_reverse && sram_addr_read_r > sram_addr_write_w)) begin
                 state_w = S_READ;
@@ -234,23 +249,34 @@ always_comb begin
             end
         end
         S_RX_START: begin
-            // 判斷傳進來的封包指令
-            // sram 位置歸零
-            led_g_w[1] = 1'b1;
-            udp_rx_ready = 1'b1;
-            led_r_w = udp_rx_data;
-            if (udp_rx_data == 8'b11111111) begin
-                led_g_w[2] = 1'b1;
-                state_w = S_SET;
-            end
-            else if (udp_rx_data == 8'b10101010) begin
-                led_g_w[3] = 1'b1;
-                state_w = S_RECV;
-                sram_addr_write_w = 20'b0;
+            if (udp_rx_last) begin
+                state_w = S_IDLE;
+                ready_w = 1'b0;
+                led_r_w = udp_rx_data;
             end
             else begin
-                led_g_w[4] = 1'b1;
-                state_w = S_RX_START;
+                if (udp_rx_data == 8'b11111111) begin
+                    state_w = S_SET;
+
+                end
+                else if (udp_rx_data == 8'b10101010) begin
+                    state_w = S_RECV;
+                end
+                else begin
+                    state_w = S_RX_START;
+                end
+            end
+        end
+
+        S_SET: begin
+            // decode filter conefficients
+            if (udp_rx_last) begin
+                state_w = S_IDLE;
+                led_r_w = udp_rx_data;
+                ready_w = 1'b0;
+            end
+            else begin
+                state_w = S_SET;
             end
         end
 
@@ -258,6 +284,8 @@ always_comb begin
             // 先收進SRAM 每
             if (udp_rx_last) begin
                 state_w = S_IDLE;
+                led_r_w = udp_rx_data;
+                ready_w = 1'b0;     // reset ready for udp
             end
             else begin
                 // save I/Q data alternately
@@ -293,30 +321,6 @@ always_comb begin
                 sram_addr_read_w = sram_addr_read_r + 1'b1;
             end
         end
-
-        S_SET: begin
-            led_g_w[5] = 1'b1;
-            // decode filter conefficients
-            if (udp_rx_last) begin
-                state_w = S_IDLE;
-            end
-            else begin
-                state_w = S_SET;
-            end
-        end
-
-        S_PLAY: begin
-            if (udp_rx_last) begin
-                state_w = S_IDLE;
-                datapath_rst_n = 1'b0;
-            end
-            else begin
-                led_g_w = udp_rx_data;
-                datapath_rst_n = 1'b1;
-            end
-        end
-
-    
         default: begin
             state_w = state_r;
         end
@@ -330,18 +334,20 @@ end
 always_ff @( posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
         state_r <= S_IDLE;
-        led_g_r <= 8'b0;
+        // led_g_r <= 8'b0;
+        led_r_r <= 8'b0;
+        ready_r <= 0;
+
         stall_pre <= 1'b0;
         sram_addr_write_r <= 20'b0;
         sram_addr_read_r <= 20'b0;
-        led_r_r <= 18'b0;
-        
     end
     else begin
         state_r <= state_w;
-        led_g_r <= led_g_w;
         led_r_r <= led_r_w;
+        ready_r <= ready_w;
 
+        
         // FIFOwrite <=1'b0;
         stall_pre <= stall;
         

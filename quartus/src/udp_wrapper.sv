@@ -8,12 +8,11 @@ module udp_wrapper (
     output        udp_rx_last,
     output [7:0]  udp_rx_data,
     
-    input         udp_tx_ready,
-    input  [15:0] udp_tx_length,
-
-
-
-    output [7:0]  udp_tx_data,
+    output        udp_tx_ready,
+    input [7:0]   udp_tx_data,
+    input         udp_tx_valid,
+    input         udp_tx_last,
+    // input  [15:0] udp_tx_length,
     
     output [17:0] led_r,
     output [6:0]  hex0,
@@ -257,7 +256,7 @@ assign tx_udp_checksum = 0;
 assign tx_udp_payload_axis_tuser = tx_fifo_udp_payload_axis_tuser;
 // loop back
 assign tx_udp_payload_axis_tdata = udp_rx_data;
-assign tx_udp_payload_axis_tvalid = udp_rx_valid;
+assign tx_udp_payload_axis_tvalid = udp_rx_valid && udp_rx_ready;
 assign tx_udp_payload_axis_tlast = udp_rx_last;
 
 
@@ -275,12 +274,12 @@ assign led_r = led_reg_r;
 
 always_ff @(posedge i_clk) begin
     
-    if (tx_udp_payload_axis_tvalid) begin
+    if (udp_rx_valid) begin
         if (!valid_last) begin
-            led_reg_r <= tx_udp_payload_axis_tdata;
+            led_reg_r <= udp_rx_data;
             valid_last <= 1'b1;
         end
-        if (tx_udp_payload_axis_tlast) begin
+        if (udp_rx_last) begin
             valid_last <= 1'b0;
         end
     end
@@ -289,72 +288,6 @@ always_ff @(posedge i_clk) begin
         led_reg_r <= 0;
     end
 end
-
-
-
-// localparam S_IDLE   = 3'd0;
-// localparam S_UDP_RX = 3'd1;
-// localparam S_UDP_TX = 3'd2;
-
-// logic [2:0] state_r, state_w;
-
-// logic udp_rx_length_cnt_r, udp_rx_length_cnt_w;
-// // logic udp_rx_avail, udp_rx_last;
-// logic [17:0] led_reg_r, led_reg_w;
-
-// assign udp_data_rx  = tx_fifo_udp_payload_axis_tdata;
-// assign udp_rx_avail = tx_fifo_udp_payload_axis_tvalid;
-// assign udp_rx_last  = tx_fifo_udp_payload_axis_tlast;
-
-// assign led_r = led_reg_r;
-
-// always_comb begin
-//     state_w = state_r;
-//     led_reg_w = led_reg_r;
-
-//     case (state_r)
-//         S_IDLE: begin
-//             led_reg_w[0] = 1'b0;
-//             led_reg_w[1] = 1'b1;
-//             if (udp_rx_avail) begin
-//                 state_w = S_UDP_RX;
-//             end
-//             else begin
-//                 state_w = S_IDLE;
-//             end
-            
-//         end
-//         S_UDP_RX: begin
-//             if (udp_rx_last) begin
-//                 state_w = S_IDLE;
-//             end
-//             else begin
-//                 led_reg_w[0] = 1'b1;
-//                 led_reg_w[1] = 1'b0;
-//             end
-//         end
-
-//         // S_UDP_TX: begin
-            
-//         // end
-//         default: begin
-//             state_w = state_r;
-//         end
-//     endcase
-// end
-
-
-// always_ff @( posedge i_clk or negedge i_rst_n) begin
-//     if (!i_rst_n) begin
-//         state_r <= S_IDLE;
-//         udp_rx_length_cnt_r <= 16'b0;
-//         led_reg_r <= 18'b0;
-//     end
-//     else begin
-//         state_r <= state_w;
-//         led_reg_r <= led_reg_w;
-//     end
-// end
 
 // place dest IP onto 7 segment displays
 logic [31:0] dest_ip_reg = 0;

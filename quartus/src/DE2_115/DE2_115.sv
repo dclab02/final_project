@@ -282,7 +282,7 @@ Debounce deb2(
 
 final_project_core top0(
 	.i_rst_n(KEY[3]),
-	.i_clk(CLOCK_50),
+	.i_clk(clk_int),
 	.i_clk12M(CLK_12M),
 	.i_clk100k(CLK_100K),
 
@@ -292,11 +292,17 @@ final_project_core top0(
 	// .i_speed(SW[3:0]), // design how user can decide mode on your own
 
 	// UDP data
+	// receive
 	.udp_rx_valid(udp_rx_valid),
 	.udp_rx_ready(udp_rx_ready),
 	.udp_rx_last(udp_rx_last),
 	.udp_rx_data(udp_rx_data),
+
+	// transmit
 	.udp_tx_data(udp_tx_data),
+	.udp_tx_ready(),
+    .udp_tx_valid(),
+    .udp_tx_last(),
 
 	// SRAM
 	.o_SRAM_ADDR(SRAM_ADDR), // [19:0]
