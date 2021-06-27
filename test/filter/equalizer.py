@@ -1,6 +1,5 @@
 # Ref: https: // www.musicdsp.org/en/latest/_downloads/3e1dc886e7849251d6747b194d482272/Audio-EQ-Cookbook.txt
 import numpy as np
-from numpy.core.fromnumeric import clip
 import pyaudio
 import wave
 import argparse
@@ -12,10 +11,9 @@ from scipy.fft import fft, fftfreq, rfft, rfftfreq, ifft, irfft
 
 class Filter():
     def __init__(self, Fs):
-        self.type = type
         self.Fs = Fs  # sample frequency
-        self.b = [0, 0, 0]  # b0, b1, b2
-        self.a = [0, 0, 0]  # a0, a1, a2
+        self.b = [1, 0, 0]  # b0, b1, b2
+        self.a = [1, 0, 0]  # a0, a1, a2
 
         self.A = 0
         self.w0 = 0
@@ -23,14 +21,10 @@ class Filter():
         self.sw0 = 0
         self.alpha = 0
 
-        self.filter_map = {
-            "LPF": self.low_pass,
-            "HPF": self.high_pass,
-            "BPF1": self.band_pass1,
-            "BPF2": self.band_pass2,
-            "notch": self.notch,
-            "APF": self.all_pass,
-            # only below will be used
+        self.x = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]] # float
+        self.y = [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]] # float
+
+        self.filter_map = {            
             "peakingEQ": self.peakingEQ,
             "lowShelf": self.low_shelf,
             "highShelf": self.high_shelf
@@ -42,37 +36,7 @@ class Filter():
         self.cw0 = np.cos(self.w0)
         self.sw0 = np.sin(self.w0)
         self.alpha = self.sw0 / (2 * Q)
-
-    def low_pass(self):
-        self.b = [(1-self.cw0)/2, 1-self.cw0, (1-self.cw0)/2]
-        self.a = [1+self.alpha, -2*self.cw0, 1-self.alpha]
-        return self.b, self.a
-
-    def high_pass(self):
-        self.b = [(1+self.cw0)/2, -(1+self.cw0), (1+self.cw0)/2]
-        self.a = [1+self.alpha, -2*self.cw0, 1-self.alpha]
-        return self.b, self.a
-
-    def band_pass1(self):  # (constant skirt gain, peak gain = Q)
-        self.b = [self.sw0/2, 0, -self.sw0/2]
-        self.a = [1+self.alpha, -2*self.cw0, 1-self.alpha]
-        return self.b, self.a
-
-    def band_pass2(self):  # (constant 0 dB peak gain)
-        self.b = [self.alpha, 0, -self.alpha]
-        self.a = [1+self.alpha, -2*self.cw0, 1-self.alpha]
-        return self.b, self.a
-
-    def notch(self):
-        self.b = [1, -2*self.cw0, 1]
-        self.a = [1+self.alpha, -2*self.cw0, 1-self.alpha]
-        return self.b, self.a
-
-    def all_pass(self):
-        self.b = [1-self.alpha, -2*self.cw0, 1+self.alpha]
-        self.a = [1+self.alpha, -2*self.cw0, 1-self.alpha]
-        return self.b, self.a
-
+    
     def peakingEQ(self):
         self.b = [1+self.alpha*self.A, -2*self.cw0, 1-self.alpha*self.A]
         self.a = [1+self.alpha/self.A, -2*self.cw0, 1-self.alpha/self.A]
@@ -98,56 +62,70 @@ class Filter():
                   (A+1) - (A-1)*self.cw0 - 2*np.sqrt(A)*self.alpha]
         return self.b, self.a
 
-    def filter(self, type, f0, dbgain, Q):
+    def filt(self, type, f0, dbgain, Q):
         self._cal_common(f0, dbgain, Q)
         return self.filter_map[type]()
 
+    def apply_filt(self, x, y):
+        b = self.b
+        a = self.a
+        y[2] = y[1]
+        y[1] = y[0]
 
-def byte_to_int(b):
-    # 2 channel
-    return [int.from_bytes(b[:2], byteorder='little', signed=True), int.from_bytes(b[2:], byteorder='little', signed=True)]
-
-
-def int_to_byte(c):
-    # 2 channel
-    c = clip16(c)
-    return c[0].to_bytes(2, byteorder='little', signed=True) + c[1].to_bytes(2, byteorder='little', signed=True)
-
+        y[0] = (b[0]/a[0])*x[0] + (b[1]/a[0])*x[1] + (b[2]/a[0]) * \
+            x[2] - (a[1]/a[0])*y[1] - (a[2]/a[0]) * y[2]
 
 def clip16(x):
     # Clipping for 16 bits
-    for i in range(0, len(x)):
-        if x[i] > 32767:
-            x[i] = 32767
-        elif x[i] < -32768:
-            x[i] = -32768
-        else:
-            x[i] = int(x[i])
-    return x
+    if x > 32767: return 32767
+    elif x < -32767: return -32767
+    return int(x)
 
+def byte_to_int(b):
+    # 1 channel
+    return int.from_bytes(b, byteorder='little', signed=True)
 
-def apply_filt(y, x, b, a, data):
-    x[2][0] = x[1][0]
-    x[2][1] = x[1][1]
-    x[1][0] = x[0][0]
-    x[1][1] = x[0][1]
+def int_to_byte(c):
+    # 1 channel
+    c = clip16(c)
+    return c.to_bytes(2, byteorder='little', signed=True)
 
-    y[2][0] = y[1][0]
-    y[2][1] = y[1][1]
-    y[1][0] = y[0][0]
-    y[1][1] = y[0][1]
+class Equalizer ():
+    def __init__(self, Fs):
+        self.filters = {
+            1: Filter(Fs),
+            2: Filter(Fs),
+            3: Filter(Fs),
+            4: Filter(Fs),
+            5:Filter(Fs)
+        }
 
-    x[0] = byte_to_int(data)
+        self.x = [0.0, 0.0, 0.0] # float
+        self.x12 = [0.0, 0.0, 0.0] # float
+        self.x23 = [0.0, 0.0, 0.0] # float
+        self.x34 = [0.0, 0.0, 0.0] # float
+        self.x45 = [0.0, 0.0, 0.0] # float
 
-    print(b[0]/a[0], b[1]/a[0], b[2]/a[0], a[1]/a[0], a[2]/a[0])
+        self.y = [0.0, 0.0, 0.0] # float
 
-    y[0][0] = (b[0]/a[0])*x[0][0] + (b[1]/a[0])*x[1][0] + (b[2]/a[0]) * \
-        x[2][0] - (a[1]/a[0])*y[1][0] - (a[2]/a[0]) * y[2][0]
-    y[0][1] = (b[0]/a[0])*x[0][1] + (b[1]/a[0])*x[1][1] + (b[2]/a[0]) * \
-        x[2][1] - (a[1]/a[0])*y[1][1] - (a[2]/a[0]) * y[2][1]
-    return y, x, int_to_byte(y[0])
+    def set_coef(self, index, type, f0, dbgain, Q):
+        b, a = self.filters[index].filt(type, f0, dbgain, Q)
+        print(f"filter{index}, type={type}, f0={f0}, dbgain={dbgain}, Q={Q}")
+        print(b, a)
+    
+    def run(self, data): # byte
+        self.x[2] = self.x[1]
+        self.x[1] = self.x[0]
+        self.x[0] = byte_to_int(data)
+        ## apply_filt
+        self.filters[1].apply_filt(self.x, self.x12)
+        self.filters[2].apply_filt(self.x12, self.x23)
+        self.filters[3].apply_filt(self.x23, self.x34)
+        self.filters[4].apply_filt(self.x34, self.x45)
+        self.filters[5].apply_filt(self.x45, self.y)
 
-
+        return int_to_byte(self.y[0])
+    
 def fix_size_list(l, size, data=None):
     # bytestring
     if data != None:
@@ -171,7 +149,7 @@ def fix_size_list(l, size, data=None):
     return l
 
 
-if __name__ == "__main__":
+def parse_arg():
     parser = argparse.ArgumentParser(description='Python Equalizer')
     parser.add_argument('-t', metavar='type', nargs=1, required=True,
                         help='enter one of LPF, HPF, BPF1, BPF2, notch, APF, peakingEQ, lowShelf, highShelf')
@@ -181,19 +159,55 @@ if __name__ == "__main__":
                         help='enter gain')
     parser.add_argument('-q', metavar='quality factor (Q)', nargs=1, required=True, type=float,
                         help='enter quality factor (Q)')
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    wf = wave.open('./input2.wav', 'rb')
+if __name__ == "__main__":
+    # args = parse_arg()
+
+    wf = wave.open('./input3.wav', 'rb')
     CHUNK = 1
-    # instantiate PyAudio (1)
+
     p = pyaudio.PyAudio()
 
     channels, sampwidth, framerate, nframes, comptype, compname = wf.getparams()
     print(wf.getparams())
 
-    filt = Filter(framerate)
-    b, a = filt.filter(args.t[0], args.f[0], args.a[0], args.q[0])
-    print(b, a)
+    eq = Equalizer(framerate)
+
+    # eq.set_coef(1, "lowShelf", 100, 6, 1)
+    eq.set_coef(2, "highShelf", 2000, -20, 1)
+    eq.set_coef(3, "lowShelf", 100, -6, 0.2)
+    # eq.set_coef(4, "peakingEQ", 2000, 10, 1)
+    eq.set_coef(5, "peakingEQ", 600, -10, 0.2)
+
+    # open stream (2)
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=channels,
+                    rate=framerate,
+                    output=True)
+
+    # read data
+    data = wf.readframes(CHUNK)
+
+    # play stream (3)
+    while len(data) > 0:
+        data = eq.run(data)
+        stream.write(data)
+        data = wf.readframes(CHUNK)
+
+    # stop stream (4)
+    stream.stop_stream()
+    stream.close()
+
+    # close PyAudio (5)
+    p.terminate()
+
+    # filt = Filter(framerate)
+    # b, a = filt.filter("lowShelf", 300, -5, 2)
+    # print(b, a)
+
+    # b2, a2 = filt.filter("highShelf", 1000, -10, 2)
+    # print(b2, a2)
 
     # # pylab plot and show
     # plt.figure()
@@ -209,33 +223,6 @@ if __name__ == "__main__":
     # plt.ylabel('Amplitude [dB]')
     # plt.savefig("./output")
 
-    # open stream (2)
-    stream = p.open(format=pyaudio.paInt16,
-                    channels=channels,
-                    rate=framerate,
-                    output=True)
-
-    # read data
-    data = wf.readframes(CHUNK)
-    y = [[0, 0], [0, 0], [0, 0]]
-    x = [[0, 0], [0, 0], [0, 0]]
-
-    l = b''
-
-    # play stream (3)
-    while len(data) > 0:
-        y, x, data = apply_filt(y, x, b, a, data)
-        l = fix_size_list(l, 44100, data)
-        stream.write(data)
-        # print(data)
-        data = wf.readframes(CHUNK)
-
-    # stop stream (4)
-    stream.stop_stream()
-    stream.close()
-
-    # close PyAudio (5)
-    p.terminate()
 
     # sinal = [b[0]]
     # sinal += [b[1]-sinal[-1]*a[1]]
