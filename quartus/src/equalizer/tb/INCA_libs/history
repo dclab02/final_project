@@ -1,0 +1,11 @@
+//
+// File created by:  irun
+// Do not modify this file
+
+s1::(26Jun2021:23:28:01):( ncverilog +access+r ./test_equalizer.sv ../equalizer.sv ../filter.sv ../fpu.v )
+s2::(26Jun2021:23:28:37):( ncverilog +access+r ./test_equalizer.sv ../equalizer.sv ../filter.sv ../fpu.v )
+s3::(26Jun2021:23:54:10):( ncverilog +access+r ./test_equalizer.sv ../equalizer.sv ../filter.sv ../fpu.v )
+s4::(26Jun2021:23:58:09):( ncverilog +access+r ./test_equalizer.sv ../equalizer.sv ../filter.sv ../fpu.v )
+s5::(27Jun2021:00:00:22):( ncverilog +access+r ./test_equalizer.sv ../equalizer.sv ../filter.sv ../fpu.v )
+s6::(27Jun2021:21:24:18):( ncverilog +access+r ./test_equalizer.sv ../equalizer.sv ../filter.sv ../fpu.v )
+s7::(28Jun2021:11:33:14):( ncverilog +access+r ./test_equalizer.sv ../equalizer.sv ../filter.sv ../fpu.v )

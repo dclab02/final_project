@@ -1,0 +1,9 @@
+//
+// File created by:  ncverilog
+// Do not modify this file
+//
++access+r
+./test_equalizer.sv
+../equalizer.sv
+../filter.sv
+../fpu.v

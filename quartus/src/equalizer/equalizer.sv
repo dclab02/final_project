@@ -177,6 +177,9 @@ always_comb begin
     state_w = state_r;
     filt_start = 5'd0;
     valid = 1'b0;
+    x2_01_w = x2_01_r;
+    x1_01_w = x1_01_r;
+    x0_01_w = x0_01_r;
     case (state_r)
         // IDLE
         3'd0: begin
@@ -184,6 +187,9 @@ always_comb begin
             valid = 1'b1;
             if (i_start) begin
                 valid = 1'b0;
+                x2_01_w = x1_01_r;
+                x1_01_w = x0_01_r;
+                x0_01_w = i_data;
                 state_w = 3'd1;
             end
         end
@@ -297,32 +303,37 @@ end
 always_ff @(posedge i_clk or posedge i_rst) begin
     if (i_rst) begin
         state_r <= 0;
+        x0_01_r <= 0;
+        x1_01_r <= 0;
+        x2_01_r <= 0;
+
+
         // 1filter coef
-        b0_1_r <= 32'd1;
+        b0_1_r <= 32'b00111111100000000000000000000000; // floating point 1
         b1_1_r <= 0;
         b2_1_r <= 0;
         a1_1_r <= 0;
         a2_1_r <= 0;
         // 2filter coef
-        b0_2_r <= 32'd1;
+        b0_2_r <= 32'b00111111100000000000000000000000;
         b1_2_r <= 0;
         b2_2_r <= 0;
         a1_2_r <= 0;
         a2_2_r <= 0;
         // 3filter coef
-        b0_3_r <= 32'd1;
+        b0_3_r <= 32'b00111111100000000000000000000000;
         b1_3_r <= 0;
         b2_3_r <= 0;
         a1_3_r <= 0;
         a2_3_r <= 0;
         // 4 filter coef
-        b0_4_r <= 32'd1;
+        b0_4_r <= 32'b00111111100000000000000000000000;
         b1_4_r <= 0;
         b2_4_r <= 0;
         a1_4_r <= 0;
         a2_4_r <= 0;
         // 5 filter coef
-        b0_5_r <= 32'd1;
+        b0_5_r <= 32'b00111111100000000000000000000000;
         b1_5_r <= 0;
         b2_5_r <= 0;
         a1_5_r <= 0;
@@ -330,6 +341,9 @@ always_ff @(posedge i_clk or posedge i_rst) begin
     end
 
     else begin
+        x0_01_r <= x0_01_w;
+        x1_01_r <= x1_01_w;
+        x2_01_r <= x2_01_w;
         // 1 filter coef
         b0_1_r <= b0_1_w;
         b1_1_r <= b1_1_w;

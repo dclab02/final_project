@@ -65,7 +65,7 @@ fpu mult_b2_x2 (
 fpu mult_a1_y1 (
     .clk(i_clk),
     .A(i_a1),
-    .B(y1_r),
+    .B(y1_w),
     .opcode(2'b11),
     .O(a1y1)
 );
@@ -73,7 +73,7 @@ fpu mult_a1_y1 (
 fpu mult_a2_y2 (
     .clk(i_clk),
     .A(i_a2),
-    .B(y2_r),
+    .B(y2_w),
     .opcode(2'b11),
     .O(a2y2)
 );

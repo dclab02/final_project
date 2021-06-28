@@ -1,0 +1,104 @@
+Magic 271485
+Revision Verdi_R-2020.12
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+viewPort 50 22 1381 776 140 65
+
+; File list:
+; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
+openDirFile -d / "" "/home/raid7_2/userb06/b06165/test/equalizer/tb/equalizer.fsdb"
+
+; file time scale:
+; fileTimeScale ### s|ms|us|ns|ps
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+; waveform viewport range
+zoom 0.000000 32320.000000
+cursor 15000.000000
+marker 0.000000
+
+; user define markers
+; userMarker time_pos marker_name color linestyle
+; visible top row signal index
+top 1
+; marker line index
+markerPos 21
+
+; event list
+; addEvent event_name event_expression
+; curEvent event_name
+
+
+
+COMPLEX_EVENT_BEGIN
+
+
+COMPLEX_EVENT_END
+
+
+
+; toolbar current search type
+; curSTATUS search_type
+curSTATUS ByChange
+
+
+addGroup "G1"
+activeDirFile "" "/home/raid7_2/userb06/b06165/test/equalizer/tb/equalizer.fsdb"
+addSignal -h 15 /tb/eq/i_clk
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope i_data[31:0]
+addSignal -h 15 -holdScope i_rst
+addSignal -h 15 -holdScope i_start
+addSignal -h 15 -holdScope filt_start[4:0]
+addSignal -h 15 -holdScope state_r[2:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x0_01_r[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x1_01_r[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x2_01_r[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x0_12[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x1_12[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x2_12[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x0_23[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x1_23[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x2_23[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x0_34[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x1_34[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x2_34[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x0_45[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x1_45[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope x2_45[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope o_data[31:0]
+addSignal -h 15 -holdScope o_valid
+addGroup "G2"
+addSignal -h 15 /tb/eq/filt1/i_start
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope i_x0[31:0]
+addSignal -h 15 -holdScope i_x1[31:0]
+addSignal -h 15 -holdScope i_x2[31:0]
+addSignal -h 15 -UNSIGNED -IEEE754 -holdScope o_y0[31:0]
+addSignal -h 15 -holdScope o_y1[31:0]
+addSignal -h 15 -holdScope o_y2[31:0]
+addGroup "G3"
+
+; getSignalForm Scope Hierarchy Status
+; active file of getSignalForm
+activeDirFile "" "/home/raid7_2/userb06/b06165/test/equalizer/tb/equalizer.fsdb"
+
+GETSIGNALFORM_SCOPE_HIERARCHY_BEGIN
+getSignalForm close
+
+"/tb"
+"/tb/eq"
+"/tb/eq/filt1"
+"/tb/eq/filt1/mult_b0_x0"
+
+SCOPE_LIST_BEGIN
+"/tb"
+"/tb/eq"
+"/tb/eq/filt1"
+"/tb/eq/filt1/mult_b0_x0"
+SCOPE_LIST_END
+
+GETSIGNALFORM_SCOPE_HIERARCHY_END
+
+
