@@ -576,6 +576,12 @@ set_location_assignment PIN_G4 -to OTG_DATA[15]
 set_location_assignment PIN_C14 -to ENET0_LINK100
 set_location_assignment PIN_D13 -to ENET1_LINK100
 set_location_assignment PIN_A14 -to ENETCLK_25
+set_global_assignment -name SYSTEMVERILOG_FILE src/utils/convert/int16tofloat32.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/utils/convert/float32toint16.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/equalizer/udp_coef_parser.sv
+set_global_assignment -name VERILOG_FILE src/equalizer/fpu.v
+set_global_assignment -name SYSTEMVERILOG_FILE src/equalizer/filter.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/equalizer/equalizer.sv
 set_global_assignment -name QIP_FILE src/pll/my_pll.qip
 set_global_assignment -name SYSTEMVERILOG_FILE src/utils/AsyncFIFO/wptr_full.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/utils/AsyncFIFO/sync_w2r.sv

@@ -45,7 +45,7 @@ end
 always_ff @(negedge i_bclk or negedge i_rst_n) begin
     if (!i_rst_n) begin
 		state_r <= S_IDLE;
-		data_cnt_r <= 3'b0;
+		data_cnt_r <= 4'b0;
 		aud_data_r <= 16'b0;
 		lrc_r <= 1'b0;
 	end

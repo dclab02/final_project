@@ -137,19 +137,22 @@ module DE2_115 (
 );
 
 logic key0down, key1down, key2down, key3down;
-logic CLK_12M, CLK_800K;
+logic CLK_12M, CLK_100K;
 
 // Internal 125 MHz clock
 logic clk_int, clk90_int;
 logic rst_int;
 
 logic pll_rst;
-assign pll_rst = ~KEY[3];
 logic pll_locked;
+assign pll_rst = ~KEY[3];
 
 logic udp_rx_valid, udp_rx_ready, udp_rx_last;
 logic udp_tx_ready;
 logic [7:0] udp_rx_data, udp_tx_data;
+
+// clock input for WM8731
+assign AUD_XCK = CLK_12M;
 
 altpll #(
     .bandwidth_type("AUTO"),
@@ -161,14 +164,14 @@ altpll #(
     .clk1_duty_cycle(50),
     .clk1_multiply_by(5),
     .clk1_phase_shift("2000"),
-	.clk2_divide_by(25),
-	.clk2_duty_cycle(50),
-	.clk2_multiply_by(6),
-	.clk2_phase_shift("0"),
-	.clk3_divide_by(500),
-	.clk3_duty_cycle(50),
-	.clk3_multiply_by(1),
-	.clk3_phase_shift("0"),
+	// .clk2_divide_by(25),
+	// .clk2_duty_cycle(50),
+	// .clk2_multiply_by(6),
+	// .clk2_phase_shift("0"),
+	// .clk3_divide_by(500),
+	// .clk3_duty_cycle(50),
+	// .clk3_multiply_by(1),
+	// .clk3_phase_shift("0"),
     .compensate_clock("CLK0"),
     .inclk0_input_frequency(20000),
     .intended_device_family("Cyclone IV E"),
@@ -201,8 +204,8 @@ altpll #(
     .port_scanwrite("PORT_UNUSED"),
     .port_clk0("PORT_USED"),
     .port_clk1("PORT_USED"),
-    .port_clk2("PORT_USED"),
-    .port_clk3("PORT_USED"),
+    .port_clk2("PORT_UNUSED"),
+    .port_clk3("PORT_UNUSED"),
     .port_clk4("PORT_UNUSED"),
     .port_clk5("PORT_UNUSED"),
     .port_clkena0("PORT_UNUSED"),
@@ -221,7 +224,7 @@ altpll #(
 altpll_component (
     .areset(pll_rst),
     .inclk({1'b0, CLOCK_50}),
-    .clk({CLK_100K, CLK_12M, clk90_int, clk_int}),
+    .clk({clk90_int, clk_int}),
     .locked(pll_locked),
     .activeclock(),
     .clkbad(),
@@ -258,13 +261,13 @@ altpll_component (
     .vcounderrange()
 );
 
-// my_pll pll2(
-// 	.areset(KEY[3]),
-// 	.inclk0(CLOCK_50),
-// 	.c0(CLK_12M),
-// 	.c1(CLK_100k),
-// 	.locked()
-// );
+my_pll pll2(
+	.areset(pll_rst),
+	.inclk0(CLOCK_50),
+	.c0(CLK_12M),
+	.c1(CLK_100K),
+	.locked()
+);
 
 
 // you can decide key down settings on your own, below is just an example
@@ -298,7 +301,7 @@ final_project_core top0(
 	.i_key_0(key0down),
 	.i_key_1(key1down),
 	.i_key_2(key2down),
-	// .i_speed(SW[3:0]), // design how user can decide mode on your own
+	.i_sw(SW),
 
 	// UDP data
 	// receive
@@ -323,7 +326,6 @@ final_project_core top0(
 	.o_SRAM_UB_N(SRAM_UB_N),
 	
 	// I2C
-	.i_clk_100k(CLK_100K),
 	.o_I2C_SCLK(I2C_SCLK),
 	.io_I2C_SDAT(I2C_SDAT),
 	
@@ -358,7 +360,6 @@ final_project_core top0(
     // .sw(sw_int),
     .led_g(LEDG),
 	.led_r(LEDR)
-
 	
     // .ledr(LEDR),
     // .hex0(HEX0),
@@ -387,7 +388,6 @@ udp_wrapper udp0(
 	.i_clk(clk_int),
     .i_clk90(clk90_int),
 	.i_rst(rst_int),
-    // .i_rst_n(KEY[3]),
 
     .udp_rx_valid(udp_rx_valid),
 	.udp_rx_ready(udp_rx_ready),

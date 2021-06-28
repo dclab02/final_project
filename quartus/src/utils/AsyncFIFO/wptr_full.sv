@@ -1,5 +1,5 @@
 module wptr_full
-#( parameter ADDRSIZE = 4)
+#( parameter ADDRSIZE = 8)
 (
     output reg                wfull,
     output     [ADDRSIZE-1:0] waddr,

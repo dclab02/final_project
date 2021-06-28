@@ -6,6 +6,9 @@ input [31:0] A, B;
 input [1:0] opcode;
 output [31:0] O;
 
+wire a_sign, b_sign;
+wire ADD, SUB, DIV, MUL;
+
 wire [31:0] O;
 wire [7:0] a_exponent;
 wire [23:0] a_mantissa;

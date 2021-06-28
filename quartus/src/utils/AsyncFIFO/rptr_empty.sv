@@ -1,5 +1,5 @@
 module rptr_empty   
-#(parameter ADDRSIZE = 4)  
+#(parameter ADDRSIZE = 8)  
 (
     output reg                rempty,
     output     [ADDRSIZE-1:0] raddr,

@@ -1,7 +1,7 @@
 module DualRAM  
 #(  
     parameter DATA_SIZE = 16,
-    parameter ADDR_SIZE = 4
+    parameter ADDR_SIZE = 8
 )  
 (  
     input                       wclken,wclk,  

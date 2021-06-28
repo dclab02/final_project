@@ -1,5 +1,5 @@
 module AsyncFIFO
-#(parameter ASIZE = 4,
+#(parameter ASIZE = 8,
    parameter DSIZE = 16)
  (
     input  [DSIZE-1:0] wdata,

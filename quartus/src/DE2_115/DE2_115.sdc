@@ -83,9 +83,9 @@ set_output_delay  -clock [get_clocks CLOCK_50] 2   [get_ports {enet0_mdc}]
 set_input_delay   -clock [get_clocks CLOCK_50] 2   [get_ports {enet0_mdio}]
 set_output_delay  -clock [get_clocks CLOCK_50] 2   [get_ports {enet0_mdio}]
 
-set_output_delay  -clock [get_clocks CLOCK_50] 2   [get_ports {enet1_mdc}]
-set_input_delay   -clock [get_clocks CLOCK_50] 2   [get_ports {enet1_mdio}]
-set_output_delay  -clock [get_clocks CLOCK_50] 2   [get_ports {enet1_mdio}]
+# set_output_delay  -clock [get_clocks CLOCK_50] 2   [get_ports {enet1_mdc}]
+# set_input_delay   -clock [get_clocks CLOCK_50] 2   [get_ports {enet1_mdio}]
+# set_output_delay  -clock [get_clocks CLOCK_50] 2   [get_ports {enet1_mdio}]
 
 set_false_path -from [get_ports {KEY[*]}] -to *
 set_false_path -from [get_ports {SW[*]}] -to *
@@ -103,8 +103,8 @@ set_false_path -from * -to [get_ports {HEX7[*]}]
 set_false_path -from [get_ports ENET0_INT_N] -to *
 set_false_path -from * -to [get_ports ENET0_RST_N]
 
-set_false_path -from [get_ports ENET1_INT_N] -to *
-set_false_path -from * -to [get_ports ENET1_RST_N]
+# set_false_path -from [get_ports ENET1_INT_N] -to *
+# set_false_path -from * -to [get_ports ENET1_RST_N]
 
 
 derive_pll_clocks
@@ -129,7 +129,7 @@ constrain_axis_async_fifo_inst "core_inst|eth_mac_inst|tx_fifo|fifo_inst"
 constrain_rgmii_input_pins "enet0" "ENET0_RX_CLK" "ENET0_RX_DV ENET0_RX_D*"
 constrain_rgmii_output_pins "enet0" "altpll_component|auto_generated|pll1|clk[0]" "ENET0_GTX_CLK" "ENET0_TX_EN ENET0_TX_D*"
 
-# ENET1 RGMII interface
-constrain_rgmii_input_pins "enet1" "ENET1_RX_CLK" "ENET1_RX_DV ENET1_RX_D*"
-constrain_rgmii_output_pins "enet1" "altpll_component|auto_generated|pll1|clk[0]" "ENET1_GTX_CLK" "ENET1_TX_EN ENET1_TX_D*"
+# # ENET1 RGMII interface
+# constrain_rgmii_input_pins "enet1" "ENET1_RX_CLK" "ENET1_RX_DV ENET1_RX_D*"
+# constrain_rgmii_output_pins "enet1" "altpll_component|auto_generated|pll1|clk[0]" "ENET1_GTX_CLK" "ENET1_TX_EN ENET1_TX_D*"
 

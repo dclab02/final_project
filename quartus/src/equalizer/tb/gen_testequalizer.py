@@ -66,7 +66,7 @@ for i in range(0, 5):
     print(f"/////// set filter{i + 1} //////")
     print("#(CLK);")
     print("i_set_coef = 1;")
-    print(f"i_set_filt = 3'd{i + 1};")
+    print(f"i_set_filt = 8'd{i + 1};")
     print(f"i_b0 = 32'b{float_to_bin(b[0])};")
     print(f"i_b1 = 32'b{float_to_bin(b[1])};")
     print(f"i_b2 = 32'b{float_to_bin(b[2])};")

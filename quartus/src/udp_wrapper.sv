@@ -45,6 +45,7 @@ parameter [31:0] dest_ip     = {8'd192, 8'd168, 8'd50,  8'd82};
 parameter [31:0] gateway_ip  = {8'd192, 8'd168, 8'd50,  8'd1};
 parameter [31:0] subnet_mask = {8'd255, 8'd255, 8'd255, 8'd0};
 parameter [15:0] udp_port    = 16'd1234;
+parameter [15:0] dest_port   = 16'd8080;
 
 // rst
 // logic rst;
@@ -242,9 +243,13 @@ assign tx_udp_ip_dscp = 0;
 assign tx_udp_ip_ecn = 0;
 assign tx_udp_ip_ttl = 64;
 assign tx_udp_ip_source_ip = local_ip;
+
 assign tx_udp_ip_dest_ip = rx_udp_ip_source_ip;
+// assign tx_udp_ip_dest_ip = dest_ip;
 assign tx_udp_source_port = rx_udp_dest_port;
-assign tx_udp_dest_port = rx_udp_source_port;
+
+// assign tx_udp_dest_port = rx_udp_source_port;
+assign tx_udp_dest_port = dest_port;
 assign tx_udp_length = rx_udp_length;
 assign tx_udp_checksum = 0;
 

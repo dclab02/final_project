@@ -1,5 +1,5 @@
 module sync_r2w   
-#(parameter ADDRSIZE = 3)  
+#(parameter ADDRSIZE = 8)  
 (
     output reg [ADDRSIZE:0] wq2_rptr,
     input      [ADDRSIZE:0] rptr,

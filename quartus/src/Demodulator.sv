@@ -3,7 +3,7 @@ module Demodulator #(parameter WIDTH=8)(
     input logic start,
     input [WIDTH-1:0] I_value,
     input [WIDTH-1:0] Q_value,
-    output [WIDTH:0] magnitude_out,
+    output [15:0] magnitude_out,
     output logic valid
     );
     logic [2 * WIDTH:0] I_sqr_value_r, I_sqr_value_w;
@@ -11,7 +11,7 @@ module Demodulator #(parameter WIDTH=8)(
     logic [2 * WIDTH + 1:0] sum_value_r, sum_value_w;
     logic busy, sqrt_valid;
     logic [WIDTH:0] magnitude;
-    assign magnitude_out = magnitude;
+    assign magnitude_out = {7'b0, magnitude};
 
 
     sqrt_int sqrt(
@@ -19,7 +19,7 @@ module Demodulator #(parameter WIDTH=8)(
         .start  (start),            // start signal
         .valid  (sqrt_valid),            // root and rem are valid
         .rad    (sum_value_w),             // radicand
-        .root   (magnitude)           // root
+        .root_out   (magnitude)           // root
         // .rem    (remaind)           // remainder
     );
     always_comb begin
@@ -56,7 +56,7 @@ module sqrt_int #(parameter WIDTH=18)(
     input   logic start,             // start signal
     output  logic valid,             // root and rem are valid
     input   logic [WIDTH-1:0] rad,   // radicand
-    output  logic [WIDTH-1:0] root  // root
+    output  logic [8:0] root_out  // root
     // output  logic [WIDTH-1:0] rem    // remainder
     );
     
@@ -65,10 +65,11 @@ module sqrt_int #(parameter WIDTH=18)(
     logic [WIDTH+1:0] ac, ac_next;  // accumulator (2 bits wider)
     logic [WIDTH+1:0] test_res;     // sign test result (2 bits wider)
     logic busy;
+    logic [WIDTH-1:0] root;
     localparam ITER = WIDTH >> 1;   // iterations are half radicand width
     // logic [$clog2(ITER)-1:0] i;     // iteration counter
     logic [3:0] i;     // iteration counter
-    
+    assign root_out = root[8:0];
     always_comb begin
         test_res = ac - {q, 2'b01};
         if (test_res[WIDTH+1] == 0) begin  // test_res ≥0? (check MSB)
@@ -94,7 +95,7 @@ module sqrt_int #(parameter WIDTH=18)(
                 root <= q_next;
                 // rem <= ac_next[WIDTH+1:2];  // undo final shift
             end else begin  // next iteration
-                i <= i + 1;
+                i <= i + 1'b1;
                 x <= x_next;
                 ac <= ac_next;
                 q <= q_next;

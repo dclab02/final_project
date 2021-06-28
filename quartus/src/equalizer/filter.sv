@@ -1,8 +1,8 @@
 // biquad filter
 // y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
-module filter (
+module Filter (
     input i_clk,
-    input i_rst,
+    input i_rst_n,
     input i_start,
 
     // filter coefficient, type: floating point
@@ -121,8 +121,8 @@ always_comb begin
     end  
 end
 
-always @(posedge i_clk or posedge i_rst) begin
-    if (i_rst) begin
+always @(posedge i_clk or negedge i_rst_n) begin
+    if (!i_rst_n) begin
         y0_r <= 0;
         y1_r <= 0;
         y2_r <= 0;

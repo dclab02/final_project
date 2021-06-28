@@ -11,7 +11,7 @@ logic [15:0] signal_r;
 assign o_signal = signal_r;
 
 
-always_ff @(negedge i_clk or negedge i_rst_n) begin
+always_ff @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
         signal_r <= 16'b0;
     end
