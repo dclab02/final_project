@@ -6,7 +6,7 @@ module tb;
     localparam HCLK = CLK/2;
 
 
-    logic rst, clk, clk_12M, clk_100k;
+    logic rst, clk, clk_12M, clk_100k, clk_375k;
     logic [19:0] SRAM_ADDR;
     wire [15:0] SRAM_DQ;
     logic SRAM_WE_N, SRAM_CE_N, SRAM_OE_N, SRAM_UB_N;
@@ -25,13 +25,18 @@ module tb;
 		clk = 1;
 		clk_12M = 1;
 		clk_100k = 1;
+		clk_375k = 1;
 	end
 	always #HCLK clk = ~clk;
 	always #(HCLK*500) clk_100k = ~clk_100k;
 	always #(HCLK*25/6) clk_12M = ~clk_12M;
+	always #(HCLK*32*25/6) clk_375k = ~clk_375k;
 
 	logic [15:0] data_in;
 	assign SRAM_DQ = (SRAM_WE_N == 1) ? data_in : 16'bz;
+
+	assign AUD_BCLK = clk_12M;
+	assign AUD_DACLRCK = clk_375k;
 	
 
 	// assign SW[17:17] = 1'b1;
@@ -106,19 +111,15 @@ module tb;
 
 		$display("Start dump");
 
+
+		// write udp packet
 		udp_rx_valid = 1;
 		udp_rx_data = 8'b10101010;
 		#(CLK * 2);
-		for (i = 0 ; i < 256; i = i+1) begin
+		for (i = 0 ; i < 200000; i = i+1) begin
 			#(CLK)
 			if (udp_rx_ready) begin
 				udp_rx_data = 8'b01010101;
-			end
-		end
-		for (i = 0 ; i < 256; i = i+1) begin
-			#(CLK)
-			if (udp_rx_ready) begin
-				udp_rx_data = 8'b01011111;
 			end
 		end
 		#(CLK);
@@ -133,13 +134,23 @@ module tb;
 		data_in = 16'h12_13; // 18, 19, state = 5
 		#(CLK * 3) // state 7, state 1
 		data_in = 16'h14_15; // state 5
-		#(CLK * 11)
-		data_in = 16'h17_18;
-		#(CLK * 11)
-		data_in = 16'h19_20;
-		#(CLK * 11)
-		data_in = 16'h21_22;
-		#(CLK * 50)
+		// #(CLK * 11)
+		// data_in = 16'h19_20;
+		// #(CLK * 11)
+		// data_in = 16'h21_22;
+		// #(CLK * 11)
+		// data_in = 16'h23_24;
+		// #(CLK * 11)
+		// data_in = 16'h25_26;
+		for (i = 0; i < 65536; i = i + 1) begin
+			#(CLK * 11)
+			data_in = i;
+		end
+		for (i = 0; i < 65536; i = i + 1) begin
+			#(CLK * 11)
+			data_in = i;
+		end
+		#(CLK * 80)
 
 		$display("Done.");
 	    $finish;

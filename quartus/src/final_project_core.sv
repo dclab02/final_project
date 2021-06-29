@@ -83,17 +83,18 @@ logic [7:0] IValue_DE, QValue_DE;
 logic [15:0] signalDE, signalFI_in, signalFI_out, signalAS_in, signalPL_in, fifo_in;
 logic [7:0] usigned_QValue, usigned_IValue;
 logic stall, stall_pre;
-logic ReceiverValid, DemodulatorValid, EqValid, PlayerValid;
+logic ReceiverValid_r, ReceiverValid_w;
+logic DemodulatorValid, EqValid, PlayerValid;
 logic FIFOEmpty, FIFOFull;
 logic FIFOWrite, FIFORead;
 logic start;
 logic stall_falling_edge;
 
-// assign FIFOWrite = stall_falling_edge? 1'b1 : 1'b0;
+assign FIFOWrite = stall_falling_edge? 1'b1 : 1'b0;
 assign FIFORead = 1'b1;
 
 // datapath stall
-assign stall = ~ReceiverValid | ~DemodulatorValid | ~EqValid;
+assign stall = ~ReceiverValid_r | ~DemodulatorValid | ~EqValid | FIFOFull;
 assign start = ~stall;
 assign stall_falling_edge = stall_pre & ~stall;
 ///////////////////////////////
@@ -141,11 +142,12 @@ assign usigned_IValue = IValue_RE_r[7] ? ~IValue_RE_r + 8'd1 : IValue_RE_r;
 
 Demodulator demodulator(
 	.clk(i_clk),
+	.i_rst_n(i_rst_n),
 	.start(start),
 	.I_value(usigned_IValue),
 	.Q_value(usigned_QValue),
 	.magnitude_out(signalDE),
-	.valid(DemodulatorValid)
+	.o_valid(DemodulatorValid)
 );
 
 AsyncFIFO audio_async_fifo(
@@ -153,7 +155,7 @@ AsyncFIFO audio_async_fifo(
     .winc(FIFOWrite),
     .wclk(i_clk),
     .wrst_n(i_rst_n),
-    .rinc(FIFOread),
+    .rinc(FIFORead),
     .rclk(i_AUD_DACLRCK),
     .rrst_n(i_rst_n),
     .rdata(signalPL_in),
@@ -260,12 +262,16 @@ PipelineRegister_FI_AS FI_PL_reg(
 
 
 assign led_g_r[2:0] = state_r;
-assign led_g_r[3] = start;
-assign led_g_r[4] = ReceiverValid;
-assign led_g_r[5] = stall;
+assign led_g_r[3] = stall;
+
+
+assign led_g_r[4] = DemodulatorValid;
+assign led_g_r[5] = ReceiverValid_r;
+
+assign led_g_r[6] = FIFOFull;
 
 // assign led_g_r[6] = i_sw[17];
-assign led_g_r[6] = FIFOFull;
+// assign led_g_r[7] = FIFOFull;
 assign led_g_r[7] = i_AUD_ADCLRCK;
 
 // assign led_g_r[4:3] = i2c_o_state;
@@ -283,15 +289,14 @@ always_comb begin
     iq_alter_w = iq_alter_r;
     sram_addr_write_w = sram_addr_write_r;
     sram_addr_read_w = sram_addr_read_r;
-    sram_addr_last = 20'b0;
+    // sram_addr_last = 20'b0;
     sram_reverse_w = sram_reverse_r;
     sram_write_data = 16'b0;
  
     IValue_RE_w = IValue_RE_r;
     QValue_RE_w = QValue_RE_r;
-    ReceiverValid = 1'b0;
-    FIFOWrite = 1'b0;
-
+    ReceiverValid_w = ReceiverValid_r;
+    // FIFOWrite = 1'b0;
 
     ready_w = ready_r;
 
@@ -307,12 +312,11 @@ always_comb begin
             end
         end
         S_IDLE: begin
-            ReceiverValid = 0;
             if (udp_rx_valid) begin
                 state_w = S_RX_START;
                 ready_w = 1'b1;
             end
-            else if ((!sram_reverse_r && sram_addr_read_r < sram_addr_write_w) || (sram_reverse_r && sram_addr_read_r > sram_addr_write_w)) begin
+            else if ((!sram_reverse_r && sram_addr_read_r < sram_addr_write_r) || (sram_reverse_r && sram_addr_read_r > sram_addr_write_r)) begin
                 if (i_sw[17]) begin
                     state_w = S_PLAY; 
                 end
@@ -328,7 +332,7 @@ always_comb begin
             if (udp_rx_last) begin
                 state_w = S_IDLE;
                 ready_w = 1'b0;
-                led_r_w[7:0] = udp_rx_data;
+                // led_r_w[7:0] = udp_rx_data;
             end
             else begin
                 if (udp_rx_data == 8'b11111111) begin
@@ -368,7 +372,7 @@ always_comb begin
                 end
                 else begin
                     sram_addr_write_w = sram_addr_write_r + 1'b1;
-                    sram_addr_last = sram_addr_write_w;
+                    // sram_addr_last = sram_addr_write_w;
                 end 
             end
 
@@ -383,20 +387,24 @@ always_comb begin
         end
 
         S_READ: begin
-            IValue_RE_w = sram_read_data[15:8];
-            QValue_RE_w = sram_read_data[7:0];
-            sram_addr_read_w = sram_addr_read_r + 1'b1;
-            state_w = S_WAIT;
             if (sram_addr_read_r == 20'b11111111111111111111) begin
                 sram_addr_read_w = 20'b0;
                 sram_reverse_w = 1'b0;
             end
+            else begin
+                IValue_RE_w = sram_read_data[15:8];
+                QValue_RE_w = sram_read_data[7:0];
+                led_r_w[17:0] = sram_addr_read_r[17:0];
+                ReceiverValid_w = 1'b1;
+                sram_addr_read_w = sram_addr_read_r + 1'b1;
+                state_w = S_WAIT;
+            end
         end
 
         S_WAIT: begin
-            ReceiverValid = 1;
             if (start) begin
                 state_w = S_IDLE;
+                ReceiverValid_w = 1'b0;
             end
             else begin
                 state_w = S_WAIT;
@@ -404,16 +412,15 @@ always_comb begin
         end
 
         S_PLAY: begin
-            FIFOWrite = 1'b1;
+            // FIFOWrite = 1'b1;
             if (sram_addr_read_r == 20'b11111111111111111111) begin
                 sram_addr_read_w = 20'b0;
                 sram_reverse_w = 1'b0;
             end
             else begin
                 // signalPL_in = sram_read_data;
-                ReceiverValid = 1;
+                ReceiverValid_w = 1;
                 led_r_w[17:0] = sram_addr_read_r[17:0];
-                // led_r_w[15:0] = sram_read_data;
                 sram_addr_read_w = sram_addr_read_r + 1'b1;
             end
             // state_w = S_WAIT;
@@ -445,6 +452,9 @@ always_ff @( posedge i_clk or negedge i_rst_n) begin
 
         IValue_RE_r <= 0;
         QValue_RE_r <= 0;
+
+        ReceiverValid_r <= 0;
+        
     end
     else begin
         state_r <= state_w;
@@ -462,6 +472,9 @@ always_ff @( posedge i_clk or negedge i_rst_n) begin
 
         IValue_RE_r <= IValue_RE_w;
         QValue_RE_r <= QValue_RE_w;
+
+        ReceiverValid_r <= ReceiverValid_w;
+
     end
     
 end
