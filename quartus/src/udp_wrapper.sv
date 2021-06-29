@@ -237,7 +237,9 @@ always_ff @(posedge i_clk) begin
     end
 end
 
-assign tx_udp_hdr_valid = rx_udp_hdr_valid && match_cond;
+assign tx_udp_hdr_valid = udp_tx_valid && match_cond;
+
+
 assign rx_udp_hdr_ready = (tx_eth_hdr_ready && match_cond) || no_match;
 assign tx_udp_ip_dscp = 0;
 assign tx_udp_ip_ecn = 0;

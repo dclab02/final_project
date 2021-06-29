@@ -118,6 +118,7 @@ assign o_SRAM_UB_N = 1'b0;
 assign audio_data = signalPL_in;
 assign fifo_in = (state_r == S_PLAY) ? sram_read_data : signalAS_in;
 
+
 // led
 assign led_g[7:0] = led_g_r;
 assign led_r = led_r_r;
@@ -258,6 +259,18 @@ PipelineRegister_FI_AS FI_PL_reg(
 	.i_stall(stall),
     .i_signal(signalFI_out),
     .o_signal(signalAS_in)
+);
+
+// udp send back
+udp_loop_back inst (
+    .i_rst_n(i_rst_n),
+    .i_clk(i_clk),
+    .i_stall(stall),
+    .i_data(signalAS_in),
+    .udp_tx_ready(udp_tx_ready),
+    .udp_tx_valid(udp_tx_valid),
+    .udp_tx_last(udp_tx_last),
+    .udp_tx_data(udp_tx_data)
 );
 
 
