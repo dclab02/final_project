@@ -62,7 +62,7 @@ module tb;
 
 		// transmit
 		.udp_tx_data(),
-		.udp_tx_ready(),
+		.udp_tx_ready(1'b1),
 		.udp_tx_valid(),
 		.udp_tx_last(),
 

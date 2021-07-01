@@ -102,7 +102,7 @@ module sqrt_int #(parameter WIDTH=18)(
         end
     end
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or negedge i_rst_n) begin
         if (!i_rst_n) begin
             busy <= 0;
             valid <= 1'b1;

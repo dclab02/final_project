@@ -14,6 +14,8 @@ module final_project_core (
     input       udp_rx_last,
     input [7:0] udp_rx_data,
 
+    input      udp_tx_hdr_ready,
+    output     udp_tx_hdr_valid,
     input      udp_tx_ready,
     output       udp_tx_valid,
     output       udp_tx_last,
@@ -94,7 +96,9 @@ assign FIFOWrite = stall_falling_edge? 1'b1 : 1'b0;
 assign FIFORead = 1'b1;
 
 // datapath stall
+// assign stall = ~ReceiverValid_r | ~DemodulatorValid | ~EqValid | FIFOFull;
 assign stall = ~ReceiverValid_r | ~DemodulatorValid | ~EqValid | FIFOFull;
+
 assign start = ~stall;
 assign stall_falling_edge = stall_pre & ~stall;
 ///////////////////////////////
@@ -113,6 +117,8 @@ assign o_SRAM_WE_N = (state_r == S_RECV) ? 1'b0 : 1'b1;
 assign o_SRAM_OE_N = 1'b0;
 assign o_SRAM_LB_N = 1'b0;
 assign o_SRAM_UB_N = 1'b0;
+
+logic [7:0] upper_data_r, upper_data_w; // upper of udp data
 
 // assign audio_data = (state_r == S_PLAY) ? sram_read_data : signalPL_in;
 assign audio_data = signalPL_in;
@@ -157,7 +163,7 @@ AsyncFIFO audio_async_fifo(
     .wclk(i_clk),
     .wrst_n(i_rst_n),
     .rinc(FIFORead),
-    .rclk(i_AUD_DACLRCK),
+    .rclk(~i_AUD_DACLRCK),
     .rrst_n(i_rst_n),
     .rdata(signalPL_in),
     .wfull(FIFOFull),
@@ -265,8 +271,13 @@ PipelineRegister_FI_AS FI_PL_reg(
 udp_loop_back inst (
     .i_rst_n(i_rst_n),
     .i_clk(i_clk),
-    .i_stall(stall),
-    .i_data(signalAS_in),
+    .i_stall_falling(stall_falling_edge),
+    .i_stall(),
+    .i_eqvalid(),
+
+    .i_data(signalDE),
+    .udp_tx_hdr_ready(udp_tx_hdr_ready),
+    .udp_tx_hdr_valid(udp_tx_hdr_valid),
     .udp_tx_ready(udp_tx_ready),
     .udp_tx_valid(udp_tx_valid),
     .udp_tx_last(udp_tx_last),
@@ -275,17 +286,18 @@ udp_loop_back inst (
 
 
 assign led_g_r[2:0] = state_r;
-assign led_g_r[3] = stall;
+
+assign led_g_r[3] = start;
+assign led_g_r[4] = stall;
 
 
-assign led_g_r[4] = DemodulatorValid;
-assign led_g_r[5] = ReceiverValid_r;
+assign led_g_r[5] = DemodulatorValid;
 
-assign led_g_r[6] = FIFOFull;
+assign led_g_r[6] = ReceiverValid_r;
 
 // assign led_g_r[6] = i_sw[17];
 // assign led_g_r[7] = FIFOFull;
-assign led_g_r[7] = i_AUD_ADCLRCK;
+assign led_g_r[7] = i_AUD_DACLRCK;
 
 // assign led_g_r[4:3] = i2c_o_state;
 // assign led_g_r[5] = i2c_init;
@@ -309,6 +321,8 @@ always_comb begin
     IValue_RE_w = IValue_RE_r;
     QValue_RE_w = QValue_RE_r;
     ReceiverValid_w = ReceiverValid_r;
+
+    upper_data_w = upper_data_r;
     // FIFOWrite = 1'b0;
 
     ready_w = ready_r;
@@ -345,14 +359,18 @@ always_comb begin
             if (udp_rx_last) begin
                 state_w = S_IDLE;
                 ready_w = 1'b0;
-                // led_r_w[7:0] = udp_rx_data;
             end
             else begin
-                if (udp_rx_data == 8'b11111111) begin
-                    state_w = S_SET;
-                end
-                else if (udp_rx_data == 8'b10101010) begin
-                    state_w = S_RECV;
+                if (udp_rx_ready && udp_rx_valid) begin
+                    if (udp_rx_data == 8'b11111111) begin
+                        state_w = S_SET;
+                    end
+                    else if (udp_rx_data == 8'b10101010) begin
+                        state_w = S_RECV;
+                    end
+                    else begin
+                        state_w = S_RX_START;
+                    end
                 end
                 else begin
                     state_w = S_RX_START;
@@ -372,31 +390,43 @@ always_comb begin
         end
 
         S_RECV: begin
-            if (!iq_alter_r) begin
-                sram_write_data[15:8] = udp_rx_data;
-            end
+            // if SRAM is full
+            if (udp_rx_valid && udp_rx_ready) begin
 
-            else begin
-                sram_write_data[7:0] = udp_rx_data;
-                // if SRAM is full
-                if (sram_addr_write_r == 20'b11111111111111111111) begin // OVF
-                    sram_addr_write_w = 20'b0;
-                    sram_reverse_w = 1'b1;
+                // save I/Q data alternately
+                iq_alter_w = ~iq_alter_r;
+                if (!iq_alter_r) begin
+                    upper_data_w = udp_rx_data;
+                    // sram_write_data[15:8] = udp_rx_data;
+                    // led_r_w[15:8] = sram_write_data[15:8];
                 end
                 else begin
-                    sram_addr_write_w = sram_addr_write_r + 1'b1;
-                    // sram_addr_last = sram_addr_write_w;
-                end 
-            end
+                    // sram_write_data[7:0] = udp_rx_data;
+                    sram_write_data = { upper_data_r, udp_rx_data };
+                    
 
-            // save I/Q data alternately
-            if (udp_rx_last) begin
-                state_w = S_IDLE;
-                ready_w = 1'b0;     // reset ready for udp
+                    // next current address is the last
+                    if (sram_addr_write_r == 20'b11111111111111111111) begin // OVF
+                        sram_addr_write_w = 20'b0;
+                        sram_reverse_w = 1'b1;
+                    end
+                    else begin
+                    // update current write address 
+                        sram_addr_write_w = sram_addr_write_r + 20'b1;
+                    end
+                end
+
+                // last byte
+                if (udp_rx_last) begin
+                    iq_alter_w = 0;
+                    state_w = S_IDLE;
+                    ready_w = 1'b0;     // reset ready for udp
+                end
             end
             else begin
-                iq_alter_w = ~iq_alter_r;
+                state_w = S_RECV;
             end
+
         end
 
         S_READ: begin
@@ -407,9 +437,9 @@ always_comb begin
             else begin
                 IValue_RE_w = sram_read_data[15:8];
                 QValue_RE_w = sram_read_data[7:0];
-                led_r_w[17:0] = sram_addr_read_r[17:0];
                 ReceiverValid_w = 1'b1;
-                sram_addr_read_w = sram_addr_read_r + 1'b1;
+                led_r_w[17:0] = sram_addr_read_r[17:0];
+                sram_addr_read_w = sram_addr_read_r + 20'd1;
                 state_w = S_WAIT;
             end
         end
@@ -431,12 +461,10 @@ always_comb begin
                 sram_reverse_w = 1'b0;
             end
             else begin
-                // signalPL_in = sram_read_data;
                 ReceiverValid_w = 1;
                 led_r_w[17:0] = sram_addr_read_r[17:0];
-                sram_addr_read_w = sram_addr_read_r + 1'b1;
+                sram_addr_read_w = sram_addr_read_r + 20'd1;
             end
-            // state_w = S_WAIT;
 
             state_w = S_IDLE;
         end
@@ -467,6 +495,8 @@ always_ff @( posedge i_clk or negedge i_rst_n) begin
         QValue_RE_r <= 0;
 
         ReceiverValid_r <= 0;
+
+        upper_data_r <= 0;
         
     end
     else begin
@@ -487,6 +517,8 @@ always_ff @( posedge i_clk or negedge i_rst_n) begin
         QValue_RE_r <= QValue_RE_w;
 
         ReceiverValid_r <= ReceiverValid_w;
+
+        upper_data_r <= upper_data_w;
 
     end
     

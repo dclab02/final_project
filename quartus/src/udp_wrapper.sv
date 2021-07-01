@@ -8,7 +8,9 @@ module udp_wrapper (
     output        udp_rx_last,
     output [7:0]  udp_rx_data,
     
-    output        udp_tx_ready,
+    input         udp_tx_hdr_valid,
+    output  logic udp_tx_hdr_ready,
+    output  logic udp_tx_ready,
     input [7:0]   udp_tx_data,
     input         udp_tx_valid,
     input         udp_tx_last,
@@ -237,22 +239,23 @@ always_ff @(posedge i_clk) begin
     end
 end
 
-assign tx_udp_hdr_valid = udp_tx_valid && match_cond;
 
 
 assign rx_udp_hdr_ready = (tx_eth_hdr_ready && match_cond) || no_match;
+
+// tx data
+assign tx_udp_hdr_valid = udp_tx_hdr_valid;
+assign udp_tx_hdr_ready = tx_udp_hdr_ready;
+
+
 assign tx_udp_ip_dscp = 0;
 assign tx_udp_ip_ecn = 0;
 assign tx_udp_ip_ttl = 64;
 assign tx_udp_ip_source_ip = local_ip;
-
-assign tx_udp_ip_dest_ip = rx_udp_ip_source_ip;
-// assign tx_udp_ip_dest_ip = dest_ip;
-assign tx_udp_source_port = rx_udp_dest_port;
-
-// assign tx_udp_dest_port = rx_udp_source_port;
+assign tx_udp_ip_dest_ip = dest_ip;
+assign tx_udp_source_port = udp_port;
 assign tx_udp_dest_port = dest_port;
-assign tx_udp_length = rx_udp_length;
+assign tx_udp_length = 16'd10;
 assign tx_udp_checksum = 0;
 
 // output wire
@@ -262,9 +265,15 @@ assign tx_udp_checksum = 0;
 // assign tx_udp_payload_axis_tlast = tx_fifo_udp_payload_axis_tlast;
 assign tx_udp_payload_axis_tuser = tx_fifo_udp_payload_axis_tuser;
 // loop back
-assign tx_udp_payload_axis_tdata = udp_rx_data;
-assign tx_udp_payload_axis_tvalid = udp_rx_valid && udp_rx_ready;
-assign tx_udp_payload_axis_tlast = udp_rx_last;
+// assign tx_udp_payload_axis_tdata = udp_rx_data;
+// assign tx_udp_payload_axis_tvalid = udp_rx_valid && udp_rx_ready;
+assign tx_udp_payload_axis_tvalid = udp_tx_valid;
+assign tx_udp_payload_axis_tlast = udp_tx_last;
+assign tx_udp_payload_axis_tdata = udp_tx_data;
+// assign tx_udp_payload_axis_tvalid = udp_tx_valid;
+// assign tx_udp_payload_axis_tlast = udp_tx_last;
+// assign udp_tx_ready = udp_rx_valid && udp_rx_ready;
+assign udp_tx_ready = tx_udp_payload_axis_tready;
 
 
 assign rx_fifo_udp_payload_axis_tdata = rx_udp_payload_axis_tdata;

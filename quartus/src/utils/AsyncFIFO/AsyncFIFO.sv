@@ -31,6 +31,7 @@ sync_w2r I2_sync_w2r (
 /* DualRAM */
 
 DualRAM #(DSIZE, ASIZE) I3_DualRAM(
+    .rst_n(rrst_n),
     .rdata(rdata), 
     .wdata(wdata),
     .waddr(waddr), 

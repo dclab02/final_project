@@ -148,7 +148,8 @@ logic pll_locked;
 assign pll_rst = ~KEY[3];
 
 logic udp_rx_valid, udp_rx_ready, udp_rx_last;
-logic udp_tx_ready;
+logic udp_tx_ready, udp_tx_valid, udp_tx_last;
+logic udp_tx_hdr_valid, udp_tx_hdr_ready;
 logic [7:0] udp_rx_data, udp_tx_data;
 
 // clock input for WM8731
@@ -311,10 +312,12 @@ final_project_core top0(
 	.udp_rx_data(udp_rx_data),
 
 	// transmit
+	.udp_tx_hdr_ready(udp_tx_hdr_ready),
+	.udp_tx_hdr_valid(udp_tx_hdr_valid),
+    .udp_tx_valid(udp_tx_valid),
+	.udp_tx_ready(udp_tx_ready),
+    .udp_tx_last(udp_tx_last),
 	.udp_tx_data(udp_tx_data),
-	.udp_tx_ready(),
-    .udp_tx_valid(),
-    .udp_tx_last(),
 
 	// SRAM
 	.o_SRAM_ADDR(SRAM_ADDR), // [19:0]
@@ -393,8 +396,12 @@ udp_wrapper udp0(
 	.udp_rx_ready(udp_rx_ready),
     .udp_rx_last(udp_rx_last),
 	.udp_rx_data(udp_rx_data),
+
+	.udp_tx_hdr_ready(udp_tx_hdr_ready),
+	.udp_tx_hdr_valid(udp_tx_hdr_valid),
+    .udp_tx_valid(udp_tx_valid),
 	.udp_tx_ready(udp_tx_ready),
-    .udp_tx_length(),
+	.udp_tx_last(udp_tx_last),
 	.udp_tx_data(udp_tx_data),
 
 	.led_r(),
